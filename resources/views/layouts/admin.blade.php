@@ -18,6 +18,12 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/transformations.min.css" rel="stylesheet">
 
+    {{-- Toastr --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    {{-- SweetAlert2 --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         body { font-family: 'Poppins', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -148,6 +154,36 @@
         }
     </script>
     
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        // Konfigurasi Toastr
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "3000",
+        };
+
+        // Tangkap session 'success'
+        @if(session('success'))
+            toastr.success("{{ session('success') }}");
+        @endif
+
+        // Tangkap session 'error'
+        @if(session('error'))
+            toastr.error("{{ session('error') }}");
+        @endif
+        
+        // Tangkap error validasi form
+        @if($errors->any())
+            @foreach($errors->all() as $error)
+                toastr.error("{{ $error }}");
+            @endforeach
+        @endif
+    </script>
+
     @stack('scripts')
 </body>
 </html>

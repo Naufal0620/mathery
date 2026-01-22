@@ -28,9 +28,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Dashboard Utama
         Route::get('/dashboard', 'index')->name('dashboard');
         
-        // Akademik
-        Route::get('/classes', 'classes')->name('classes');     // Manajemen Kelas
-        Route::get('/syllabus', 'syllabus')->name('syllabus');   // Jadwal & Topik
+        // Manajemen Kelas
+        Route::get('/classes', 'classes')->name('classes');
+        Route::post('/classes', 'storeClass')->name('classes.store'); // Tambah Kelas
+        Route::put('/classes/{id}', 'updateClass')->name('classes.update'); // Update Kelas
+        Route::delete('/classes/{id}', 'destroyClass')->name('classes.destroy'); // Hapus Kelas
+        
+        // Manajemen Topik
+        Route::get('/syllabus', 'syllabus')->name('syllabus');
+        Route::post('/syllabus', 'storeTopic')->name('syllabus.store'); // Tambah Topik
+        Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update'); // Update Topik
+        Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy'); // Hapus Topik
+        
         Route::get('/users', 'users')->name('users');           // Data Mahasiswa
         
         // Sistem
