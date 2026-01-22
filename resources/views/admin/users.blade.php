@@ -10,12 +10,13 @@
         
         {{-- Search & Filter Group --}}
         <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {{-- Filter Kelas (Optional Logic) --}}
-            <form action="{{ route('admin.users') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full">
+            {{-- Filter Kelas --}}
+            {{-- Tambahkan ID 'searchForm' agar bisa disubmit lewat JS --}}
+            <form id="searchForm" action="{{ route('admin.users') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full">
                 
                 {{-- Dropdown Filter --}}
                 <div class="relative w-full sm:w-48">
-                    <select name="filter_class" onchange="this.form.submit()" class="w-full bg-white border border-gray-300 text-gray-700 rounded-xl px-4 py-2.5 appearance-none focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                    <select name="filter_class" onchange="this.form.submit()" class="w-full bg-white border border-gray-300 text-gray-700 rounded-xl px-4 py-2.5 appearance-none focus:ring-2 focus:ring-indigo-500/20 outline-none cursor-pointer">
                         <option value="">Semua Kelas</option>
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}" {{ request('filter_class') == $course->id ? 'selected' : '' }}>
@@ -26,16 +27,22 @@
                     <i class='bx bx-chevron-down absolute right-4 top-3 text-gray-400'></i>
                 </div>
 
-                {{-- Search Bar --}}
+                {{-- Search Bar Otomatis --}}
                 <div class="relative w-full sm:w-64">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Nama / NIM..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                    <i class='bx bx-search absolute left-3 top-3 text-gray-400'></i>
+                    <input type="text" id="searchInput" name="search" value="{{ request('search') }}" autocomplete="off" placeholder="Ketik Nama / NIM..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
+                    
+                    {{-- Ikon Search (Normal) --}}
+                    {{-- Kita bungkus dengan DIV agar class 'hidden' berfungsi sempurna --}}
+                    <div id="searchIcon" class="absolute left-3 top-3 text-gray-400 transition-all">
+                        <i class='bx bx-search'></i>
+                    </div>
+
+                    {{-- Ikon Loading (Hidden by default) --}}
+                    {{-- Kita bungkus dengan DIV agar class 'hidden' berfungsi sempurna --}}
+                    <div id="loadingIcon" class="absolute left-3 top-3 text-indigo-500 hidden transition-all">
+                        <i class='bx bx-loader-dots bx-spin'></i>
+                    </div>
                 </div>
-                
-                {{-- Tombol Cari Mobile (Optional, tekan enter di input juga bisa) --}}
-                <button type="submit" class="hidden sm:block px-4 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition">
-                    <i class='bx bx-check'></i>
-                </button>
             </form>
         </div>
 
@@ -62,7 +69,6 @@
                     <tr class="hover:bg-gray-50/50 transition">
                         <td class="p-4">
                             <div class="flex items-center gap-3">
-                                {{-- Avatar Initials --}}
                                 <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
                                     {{ substr($student->full_name, 0, 1) }}
                                 </div>
@@ -100,7 +106,7 @@
                     @empty
                     <tr>
                         <td colspan="4" class="p-8 text-center text-gray-400">
-                            <i class='bx bx-user-x text-4xl mb-2'></i>
+                            <i class='bx bx-search-alt text-4xl mb-2'></i>
                             <p>Data mahasiswa tidak ditemukan.</p>
                         </td>
                     </tr>
@@ -111,6 +117,7 @@
     </div>
 </div>
 
+{{-- Modal Add User (Tidak Berubah) --}}
 <div id="modalAddUser" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg transform scale-100 transition-all max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
@@ -126,7 +133,6 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
                 <input type="text" name="full_name" required placeholder="Nama Lengkap" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
             </div>
-
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">NIM (Username)</label>
@@ -137,12 +143,10 @@
                     <input type="password" name="password" required placeholder="******" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
                 </div>
             </div>
-
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                 <input type="email" name="email" required placeholder="email@mahasiswa.com" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
             </div>
-
             <div class="pt-4 flex justify-end gap-3">
                 <button type="button" onclick="toggleModal('modalAddUser')" class="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
                 <button type="submit" class="px-6 py-3 bg-gradient-to-r from-indigo-700 to-purple-600 text-white rounded-xl font-medium shadow-lg hover:shadow-none transition">Simpan</button>
@@ -151,6 +155,7 @@
     </div>
 </div>
 
+{{-- Modal Edit User (Tidak Berubah) --}}
 <div id="modalEditUser" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg transform scale-100 transition-all max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
@@ -159,31 +164,25 @@
                 <i class='bx bx-x bx-sm'></i>
             </button>
         </div>
-        
         <form id="formEditUser" action="#" method="POST" class="space-y-4">
             @csrf
             @method('PUT')
-            
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
                 <input type="text" id="edit_full_name" name="full_name" required class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
             </div>
-
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">NIM (Username)</label>
                 <input type="text" id="edit_username" name="username" required class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
             </div>
-
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                 <input type="email" id="edit_email" name="email" required class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 outline-none transition">
             </div>
-            
             <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
                 <label class="block text-sm font-semibold text-yellow-800 mb-2">Ubah Password (Opsional)</label>
                 <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah" class="w-full bg-white border border-yellow-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500/20 outline-none transition text-sm">
             </div>
-
             <div class="pt-4 flex justify-end gap-3">
                 <button type="button" onclick="toggleModal('modalEditUser')" class="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
                 <button type="submit" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium shadow-lg hover:shadow-none transition">Simpan Perubahan</button>
@@ -194,6 +193,7 @@
 
 @push('scripts')
 <script>
+    // --- Logic Toggle Modal ---
     function toggleModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal.classList.contains('hidden')) {
@@ -206,14 +206,13 @@
     function openEditModal(id, fullName, username, email) {
         let urlTemplate = "{{ route('admin.users.update', 'ID_PLACEHOLDER') }}";
         document.getElementById('formEditUser').action = urlTemplate.replace('ID_PLACEHOLDER', id);
-        
         document.getElementById('edit_full_name').value = fullName;
         document.getElementById('edit_username').value = username;
         document.getElementById('edit_email').value = email;
-        
         toggleModal('modalEditUser');
     }
 
+    // --- Logic Confirm Delete SweetAlert ---
     function confirmDelete(id, name) {
         Swal.fire({
             title: 'Hapus Mahasiswa?',
@@ -235,6 +234,42 @@
             }
         })
     }
+
+    // --- Logic AUTO SEARCH (Debounce) ---
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    const searchIcon = document.getElementById('searchIcon');
+    const loadingIcon = document.getElementById('loadingIcon');
+    let timeout = null;
+
+    searchInput.addEventListener('input', function() {
+        // Reset timer jika user masih mengetik
+        clearTimeout(timeout);
+
+        // Ubah icon jadi loading
+        searchIcon.classList.add('hidden');
+        loadingIcon.classList.remove('hidden');
+
+        // Tunggu 800ms setelah user berhenti mengetik
+        timeout = setTimeout(() => {
+            searchForm.submit();
+        }, 800);
+    });
+
+    // --- Logic Focus Retention (Agar kursor tidak hilang saat reload) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        // Cek apakah ada parameter pencarian di URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('search')) {
+            // Fokus ke input
+            searchInput.focus();
+            
+            // Trik memindahkan kursor ke posisi paling belakang
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+        }
+    });
 </script>
 @endpush
 @endsection

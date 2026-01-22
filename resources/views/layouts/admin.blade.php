@@ -17,6 +17,7 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/transformations.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/animations.min.css" rel="stylesheet">
 
     {{-- Toastr --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
