@@ -29,6 +29,10 @@ class Course extends Model
     // Relasi ke Mahasiswa (Class Members)
     public function students()
     {
-        return $this->belongsToMany(User::class, 'class_members', 'class_id', 'user_id');
+        // Relasi ke User lewat tabel pivot 'class_members'
+        // withPivot('id') berguna agar kita bisa akses ID di tabel pivot jika perlu
+        return $this->belongsToMany(User::class, 'class_members', 'class_id', 'user_id')
+                    ->withPivot('id', 'joined_at')
+                    ->withTimestamps();
     }
 }

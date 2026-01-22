@@ -36,7 +36,7 @@
                 <span class="flex items-center gap-1"><i class='bx bx-folder'></i> - Topik</span>
             </div>
             
-            <div class="flex gap-2 mt-4">
+            <div class="flex flex-col gap-2 mt-4">
                 {{-- Tombol Edit dengan Data Attributes --}}
                 {{-- Kita pecah string "Kalkulus II - Kelas A" menjadi dua bagian untuk diumpan ke form --}}
                 @php
@@ -45,20 +45,26 @@
                     $classNameOnly = $parts[1] ?? '';
                 @endphp
 
-                <button 
-                    onclick="openEditModal('{{ $course->id }}', '{{ $courseNameOnly }}', '{{ $classNameOnly }}', '{{ $course->description }}')"
-                    class="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
-                    <i class='bx bx-edit-alt'></i> Edit
-                </button>
-                
-                {{-- Form Delete --}}
-                <form action="{{ route('admin.classes.destroy', $course->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Yakin ingin menghapus kelas ini?');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="w-full px-3 py-2 text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
-                        <i class='bx bx-trash'></i> Hapus
+                <a href="{{ route('admin.classes.members', $course->id) }}" class="w-full py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-lg transition text-center flex items-center justify-center gap-2">
+                    <i class='bx bx-group'></i> Atur Anggota
+                </a>
+
+                <div class="flex gap-2">
+                    <button 
+                        onclick="openEditModal('{{ $course->id }}', '{{ $courseNameOnly }}', '{{ $classNameOnly }}', '{{ $course->description }}')"
+                        class="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                        <i class='bx bx-edit-alt'></i> Edit
                     </button>
-                </form>
+                    
+                    {{-- Form Delete --}}
+                    <form action="{{ route('admin.classes.destroy', $course->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Yakin ingin menghapus kelas ini?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full px-3 py-2 text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                            <i class='bx bx-trash'></i> Hapus
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
         @empty

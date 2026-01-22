@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\Course;
 use App\Models\Topic;
+use App\Models\User;
 
 class AdminController extends Controller
 {
@@ -163,9 +165,146 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Topik berhasil dihapus.');
     }
 
-    public function users()
+    public function users(Request $request)
     {
-        return view('admin.users');
+        // Ambil daftar kelas untuk filter
+        $courses = Course::where('is_active', true)->get();
+
+        // Query Dasar: Ambil hanya yang role-nya 'student'
+        $query = User::where('role', 'student')->orderBy('created_at', 'desc');
+
+        // Filter berdasarkan Kelas (Jika dipilih)
+        if ($request->has('filter_class') && $request->filter_class != '') {
+            // Cari user yang punya relasi ke kelas ID tersebut
+            $query->whereHas('classes', function($q) use ($request) {
+                $q->where('classes.id', $request->filter_class);
+            });
+        }
+
+        // Filter Pencarian Nama/NIM (Opsional, tambahan fitur search sederhana)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
+        $students = $query->get();
+
+        return view('admin.users', compact('students', 'courses'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:100',
+            'username'  => 'required|string|max:50|unique:users,username', // NIM harus unik
+            'email'     => 'required|email|max:100|unique:users,email',
+            'password'  => 'required|string|min:6',
+        ]);
+
+        User::create([
+            'full_name' => $request->full_name,
+            'username'  => $request->username,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role'      => 'student', // Paksa role jadi student
+            'avatar'    => 'default.jpg',
+        ]);
+
+        return redirect()->route('admin.users')->with('success', 'Mahasiswa berhasil ditambahkan!');
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'full_name' => 'required|string|max:100',
+            // Ignore unique validation untuk ID user ini sendiri
+            'username'  => 'required|string|max:50|unique:users,username,'.$user->id,
+            'email'     => 'required|email|max:100|unique:users,email,'.$user->id,
+            'password'  => 'nullable|string|min:6', // Password boleh kosong jika tidak ingin diganti
+        ]);
+
+        $data = [
+            'full_name' => $request->full_name,
+            'username'  => $request->username,
+            'email'     => $request->email,
+        ];
+
+        // Jika password diisi, update password baru
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->route('admin.users')->with('success', 'Data mahasiswa berhasil diperbarui!');
+    }
+
+    public function destroyUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->back()->with('success', 'Mahasiswa berhasil dihapus.');
+    }
+
+    public function classMembers(Request $request, $id)
+    {
+        $course = Course::with('students')->findOrFail($id);
+
+        // Default: Kosong (agar tabel tidak muncul jika belum mencari)
+        $availableStudents = collect(); 
+
+        // Hanya jalankan query jika ada input pencarian
+        if ($request->filled('search')) {
+            $existingStudentIds = $course->students->pluck('id')->toArray();
+            
+            $search = $request->search;
+            
+            $availableStudents = User::where('role', 'student')
+                ->whereNotIn('id', $existingStudentIds)
+                ->where(function($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%");
+                })
+                ->orderBy('full_name', 'asc')
+                ->limit(5) // Limit hasil agar tidak terlalu berat
+                ->get();
+        }
+
+        return view('admin.class_members', compact('course', 'availableStudents'));
+    }
+
+    public function storeClassMember(Request $request, $id)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $course = Course::findOrFail($id);
+
+        // Attach: Fungsi Laravel untuk insert ke tabel pivot (class_members)
+        // Cek dulu biar gak duplikat (meski sudah divalidasi di view)
+        if (!$course->students()->where('user_id', $request->user_id)->exists()) {
+            $course->students()->attach($request->user_id);
+            return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan ke kelas!');
+        }
+
+        return redirect()->back()->with('error', 'Mahasiswa sudah terdaftar di kelas ini.');
+    }
+
+    public function destroyClassMember($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+
+        // Detach: Hapus dari tabel pivot
+        $course->students()->detach($student_id);
+
+        return redirect()->back()->with('success', 'Mahasiswa berhasil dikeluarkan dari kelas.');
     }
 
     public function activity()

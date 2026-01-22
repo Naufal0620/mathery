@@ -25,28 +25,34 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Menggunakan Controller Group agar tidak perlu menulis AdminController::class berulang kali
     Route::controller(AdminController::class)->group(function () {
         
-        // Dashboard Utama
+        // DASHBOARD UTAMA
         Route::get('/dashboard', 'index')->name('dashboard');
         
-        // Manajemen Kelas
+        // MANAJEMEN KELAS
         Route::get('/classes', 'classes')->name('classes');
         Route::post('/classes', 'storeClass')->name('classes.store'); // Tambah Kelas
         Route::put('/classes/{id}', 'updateClass')->name('classes.update'); // Update Kelas
         Route::delete('/classes/{id}', 'destroyClass')->name('classes.destroy'); // Hapus Kelas
         
-        // Manajemen Topik
+        // MANAJEMEN TOPIK
         Route::get('/syllabus', 'syllabus')->name('syllabus');
         Route::post('/syllabus', 'storeTopic')->name('syllabus.store'); // Tambah Topik
         Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update'); // Update Topik
         Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy'); // Hapus Topik
         
-        Route::get('/users', 'users')->name('users');           // Data Mahasiswa
-        
-        // Sistem
+        // MANAJEMEN MAHASISWA
+        Route::get('/users', 'users')->name('users');
+        Route::post('/users', 'storeUser')->name('users.store');
+        Route::put('/users/{id}', 'updateUser')->name('users.update');
+        Route::delete('/users/{id}', 'destroyUser')->name('users.destroy');
+
+        // MANAJEMEN ANGGOTA KELAS (MEMBERS)
+        Route::get('/classes/{id}/members', 'classMembers')->name('classes.members'); // Halaman Detail
+        Route::post('/classes/{id}/members', 'storeClassMember')->name('classes.members.store'); // Tambah Anggota
+        Route::delete('/classes/{id}/members/{student_id}', 'destroyClassMember')->name('classes.members.destroy'); // Hapus Anggota
+
+        // MANAJEMEN RIWAYAT AKTIVITAS
         Route::get('/activity', 'activity')->name('activity');   // Riwayat Aktivitas
-        
-        // CRUD Operations (Contoh untuk form submit nanti)
-        Route::post('/classes', 'storeClass')->name('classes.store');
     });
 
 });

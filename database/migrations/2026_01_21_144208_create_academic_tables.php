@@ -23,14 +23,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Tabel Class Members (Mahasiswa yang join kelas)
         Schema::create('class_members', function (Blueprint $table) {
             $table->id();
+            // Foreign Keys
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->timestamp('joined_at')->useCurrent();
             
-            // Mencegah user join kelas yang sama dua kali
+            // Kolom Waktu
+            $table->timestamp('joined_at')->useCurrent(); // Tetap simpan kolom asli (optional)
+            $table->timestamps(); // Menambahkan 'created_at' dan 'updated_at' untuk support withTimestamps()
+            
+            // Unique Constraint
             $table->unique(['class_id', 'user_id']); 
         });
 

@@ -99,7 +99,7 @@
             <form method="POST" action="#">
                 @csrf
                 <button type="submit" class="flex items-center space-x-3 w-full p-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors">
-                    <i class='bx bx-log-out bx-sm'></i>
+                    <i class='bx bx-arrow-out-right-square-half bx-sm'></i>
                     <span class="font-medium">Keluar</span>
                 </button>
             </form>
@@ -162,7 +162,7 @@
         toastr.options = {
             "closeButton": true,
             "progressBar": true,
-            "positionClass": "toast-top-right",
+            "positionClass": "toast-bottom-right",
             "timeOut": "3000",
         };
 
