@@ -58,7 +58,7 @@
                 <h4 class="text-sm font-bold text-orange-600 mb-3 uppercase tracking-wide flex items-center gap-2">
                     <i class='bx bx-time'></i> Menunggu Persetujuan
                 </h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                     @foreach($pendingClasses as $class)
                     <div class="bg-orange-50 rounded-2xl p-5 border border-orange-200/60 opacity-80">
                         <div class="flex justify-between items-start mb-2">
