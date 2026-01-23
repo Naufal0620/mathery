@@ -1,61 +1,83 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth; // Jangan lupa import Auth
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\AuthController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Di sini adalah tempat Anda mendaftarkan route untuk aplikasi Anda.
-|
-*/
-
-// Redirect halaman utama ke dashboard admin (Opsional)
+// --- ROOT ROUTE (Logika Penentu Arah) ---
+// Route ini DILUAR middleware 'guest' agar bisa diakses oleh siapa saja
 Route::get('/', function () {
-    return redirect()->route('admin.dashboard');
+    // 1. Jika User Sudah Login
+    if (Auth::check()) {
+        $user = Auth::user();
+        
+        // Cek Role dan arahkan ke dashboard yang sesuai
+        if ($user->role === 'admin' || $user->role === 'teacher') {
+            return redirect()->route('admin.dashboard');
+        } else if ($user->role === 'student') {
+            return redirect()->route('student.dashboard');
+        }
+        
+        // Fallback jika role tidak dikenali
+        return redirect()->route('login');
+    }
+
+    // 2. Jika Belum Login (Tamu)
+    return redirect()->route('login');
 });
 
-// Group Route Admin
-// Prefix: URL akan diawali dengan /admin (contoh: /admin/dashboard)
-// Name: Nama route diawali dengan admin. (contoh: admin.dashboard)
-Route::prefix('admin')->name('admin.')->group(function () {
+// --- GUEST ROUTES (Hanya untuk yang BELUM Login) ---
+Route::middleware('guest')->group(function () {
+    // Hapus Route::get('/') dari sini
     
-    // Menggunakan Controller Group agar tidak perlu menulis AdminController::class berulang kali
-    Route::controller(AdminController::class)->group(function () {
-        
-        // DASHBOARD UTAMA
-        Route::get('/dashboard', 'index')->name('dashboard');
-        
-        // MANAJEMEN KELAS
-        Route::get('/classes', 'classes')->name('classes');
-        Route::post('/classes', 'storeClass')->name('classes.store'); // Tambah Kelas
-        Route::put('/classes/{id}', 'updateClass')->name('classes.update'); // Update Kelas
-        Route::delete('/classes/{id}', 'destroyClass')->name('classes.destroy'); // Hapus Kelas
-        
-        // MANAJEMEN TOPIK
-        Route::get('/syllabus', 'syllabus')->name('syllabus');
-        Route::post('/syllabus', 'storeTopic')->name('syllabus.store'); // Tambah Topik
-        Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update'); // Update Topik
-        Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy'); // Hapus Topik
-        
-        // MANAJEMEN MAHASISWA
-        Route::get('/users', 'users')->name('users');
-        Route::post('/users', 'storeUser')->name('users.store');
-        Route::put('/users/{id}', 'updateUser')->name('users.update');
-        Route::delete('/users/{id}', 'destroyUser')->name('users.destroy');
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+});
 
-        // MANAJEMEN ANGGOTA KELAS (MEMBERS)
-        Route::get('/classes/{id}/members', 'classMembers')->name('classes.members'); // Halaman Detail
-        Route::post('/classes/{id}/members', 'storeClassMember')->name('classes.members.store'); // Tambah Anggota
-        Route::delete('/classes/{id}/members/{student_id}', 'destroyClassMember')->name('classes.members.destroy'); // Hapus Anggota
+// --- AUTH ROUTES (Harus Sudah Login) ---
+Route::middleware('auth')->group(function () {
+    
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-        // MANAJEMEN RIWAYAT AKTIVITAS
-        Route::get('/activity', 'activity')->name('activity');   // Riwayat Aktivitas
+    // --- ADMIN ROUTES ---
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::controller(AdminController::class)->group(function () {
+            Route::get('/dashboard', 'index')->name('dashboard');
+            
+            // ... (Route admin lainnya tetap sama) ...
+            Route::get('/classes', 'classes')->name('classes');
+            Route::post('/classes', 'storeClass')->name('classes.store');
+            Route::put('/classes/{id}', 'updateClass')->name('classes.update');
+            Route::delete('/classes/{id}', 'destroyClass')->name('classes.destroy');
+
+            Route::get('/classes/{id}/members', 'classMembers')->name('classes.members');
+            Route::post('/classes/{id}/members', 'storeClassMember')->name('classes.members.store');
+            Route::delete('/classes/{id}/members/{student_id}', 'destroyClassMember')->name('classes.members.destroy');
+            Route::put('/classes/{id}/members/{student_id}/approve', 'approveMember')->name('classes.members.approve');
+            
+            Route::get('/syllabus', 'syllabus')->name('syllabus');
+            Route::post('/syllabus', 'storeTopic')->name('syllabus.store');
+            Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update');
+            Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy');
+
+            Route::get('/users', 'users')->name('users');
+            Route::post('/users', 'storeUser')->name('users.store');
+            Route::put('/users/{id}', 'updateUser')->name('users.update');
+            Route::delete('/users/{id}', 'destroyUser')->name('users.destroy');
+            
+            Route::get('/activity', 'activity')->name('activity');
+        });
     });
 
-});
+    // --- STUDENT ROUTES ---
+    Route::prefix('student')->name('student.')->group(function () {
+        Route::controller(StudentController::class)->group(function () {
+            Route::get('/dashboard', 'dashboard')->name('dashboard');
 
-// Catatan: Jika Anda sudah menggunakan Auth (Login), tambahkan ->middleware(['auth']) 
-// pada group di atas agar halaman admin terlindungi.
+            // Join Class
+            Route::post('/join-class', 'joinClass')->name('joinClass');
+        });
+    });
+});

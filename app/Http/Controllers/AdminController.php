@@ -254,57 +254,68 @@ class AdminController extends Controller
 
     public function classMembers(Request $request, $id)
     {
-        $course = Course::with('students')->findOrFail($id);
-
-        // Default: Kosong (agar tabel tidak muncul jika belum mencari)
-        $availableStudents = collect(); 
-
-        // Hanya jalankan query jika ada input pencarian
-        if ($request->filled('search')) {
-            $existingStudentIds = $course->students->pluck('id')->toArray();
-            
-            $search = $request->search;
-            
-            $availableStudents = User::where('role', 'student')
-                ->whereNotIn('id', $existingStudentIds)
-                ->where(function($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                    ->orWhere('username', 'like', "%{$search}%");
-                })
-                ->orderBy('full_name', 'asc')
-                ->limit(5) // Limit hasil agar tidak terlalu berat
-                ->get();
-        }
-
-        return view('admin.class_members', compact('course', 'availableStudents'));
-    }
-
-    public function storeClassMember(Request $request, $id)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
-
         $course = Course::findOrFail($id);
 
-        // Attach: Fungsi Laravel untuk insert ke tabel pivot (class_members)
-        // Cek dulu biar gak duplikat (meski sudah divalidasi di view)
-        if (!$course->students()->where('user_id', $request->user_id)->exists()) {
-            $course->students()->attach($request->user_id);
-            return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan ke kelas!');
+        // 1. Ambil Anggota Aktif (Accepted)
+        $activeStudents = $course->students()
+            ->wherePivot('status', 'accepted') // Filter Pivot
+            ->orderBy('full_name', 'asc')
+            ->get();
+
+        // 2. Ambil Permintaan Pending (Pending)
+        $pendingStudents = $course->students()
+            ->wherePivot('status', 'pending') // Filter Pivot
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // 3. Logic untuk Dropdown Tambah Manual (Hanya user yang BELUM ada di tabel pivot sama sekali)
+        $existingIds = $course->students()->pluck('users.id')->toArray();
+        
+        $query = User::where('role', 'student')->whereNotIn('id', $existingIds);
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                ->orWhere('username', 'like', "%{$search}%");
+            });
         }
 
-        return redirect()->back()->with('error', 'Mahasiswa sudah terdaftar di kelas ini.');
+        $availableStudents = $query->limit(20)->get();
+
+        return view('admin.class_members', compact('course', 'activeStudents', 'pendingStudents', 'availableStudents'));
     }
 
+    // Fitur Tambah Manual oleh Admin (Langsung Accepted)
+    public function storeClassMember(Request $request, $id)
+    {
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        $course = Course::findOrFail($id);
+
+        // Admin nambahin = Langsung Accepted
+        $course->students()->attach($request->user_id, ['status' => 'accepted']);
+
+        return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan secara manual.');
+    }
+
+    // Fitur Approve (Terima Mahasiswa)
+    public function approveMember($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        // Update status di pivot table jadi 'accepted'
+        $course->students()->updateExistingPivot($student_id, ['status' => 'accepted']);
+
+        return redirect()->back()->with('success', 'Permintaan bergabung disetujui!');
+    }
+
+    // Fitur Reject (Tolak Mahasiswa) - Sama dengan delete/remove
     public function destroyClassMember($class_id, $student_id)
     {
         $course = Course::findOrFail($class_id);
-
-        // Detach: Hapus dari tabel pivot
         $course->students()->detach($student_id);
 
-        return redirect()->back()->with('success', 'Mahasiswa berhasil dikeluarkan dari kelas.');
+        return redirect()->back()->with('success', 'Mahasiswa dihapus/ditolak dari kelas.');
     }
 
     public function activity()

@@ -106,14 +106,68 @@
             </div>
         </div>
 
-        {{-- KOLOM KANAN: LIST MAHASISWA (Tidak Berubah) --}}
-        <div class="lg:col-span-2">
+        {{-- KOLOM KANAN: LIST MAHASISWA --}}
+        <div class="lg:col-span-2 space-y-6">
+
+            {{-- TABEL 1: PERMINTAAN PENDING (Hanya muncul jika ada request) --}}
+            @if($pendingStudents->count() > 0)
+            <div class="bg-orange-50 rounded-2xl border border-orange-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-orange-200 flex items-center justify-between bg-orange-100/50">
+                    <h3 class="text-sm font-bold text-orange-800 flex items-center gap-2">
+                        <i class='bx bx-time-five'></i> Menunggu Persetujuan
+                        <span class="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full">{{ $pendingStudents->count() }}</span>
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <tbody class="divide-y divide-orange-200/50">
+                            @foreach($pendingStudents as $student)
+                            <tr class="hover:bg-orange-100/50 transition">
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-orange-200 text-orange-700 flex items-center justify-center font-bold text-xs">
+                                            {{ substr($student->full_name, 0, 1) }}
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">{{ $student->full_name }}</p>
+                                            <p class="text-xs text-gray-500 font-mono">{{ $student->username }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-2">
+                                        {{-- Form Approve --}}
+                                        <form action="{{ route('admin.classes.members.approve', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST">
+                                            @csrf
+                                            @method('PUT') {{-- Gunakan PUT untuk update --}}
+                                            <button type="submit" class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 transition shadow-sm flex items-center gap-1">
+                                                <i class='bx bx-check'></i> Terima
+                                            </button>
+                                        </form>
+
+                                        {{-- Form Reject --}}
+                                        <form action="{{ route('admin.classes.members.destroy', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST" onsubmit="return confirm('Tolak permintaan ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="bg-white border border-red-200 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 transition flex items-center gap-1">
+                                                <i class='bx bx-x'></i> Tolak
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- TABEL 2: ANGGOTA AKTIF (Accepted) --}}
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-gray-800">Daftar Mahasiswa Terdaftar</h3>
-                    
-                    {{-- Optional: Indikator jumlah --}}
-                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">Total: {{ $course->students->count() }}</span>
+                    <h3 class="text-lg font-bold text-gray-800">Daftar Mahasiswa Aktif</h3>
+                    <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg font-bold">{{ $activeStudents->count() }} Siswa</span>
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -126,7 +180,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @forelse($course->students as $student)
+                            @forelse($activeStudents as $student)
                             <tr class="hover:bg-gray-50/50 transition">
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
@@ -138,10 +192,10 @@
                                 </td>
                                 <td class="p-4 font-mono text-sm text-gray-500">{{ $student->username }}</td>
                                 <td class="p-4 text-center">
-                                    <button onclick="confirmRemove('{{ $student->id }}', '{{ $student->full_name }}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition" title="Keluarkan dari Kelas">
-                                        <i class='bx bx-user-x text-xl'></i>
+                                    {{-- Tombol Keluarkan (Kick) --}}
+                                    <button onclick="confirmRemove('{{ $student->id }}', '{{ $student->full_name }}')" class="text-gray-400 hover:text-red-500 transition" title="Keluarkan">
+                                        <i class='bx bx-trash text-lg'></i>
                                     </button>
-
                                     <form id="remove-form-{{ $student->id }}" action="{{ route('admin.classes.members.destroy', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST" style="display: none;">
                                         @csrf
                                         @method('DELETE')
@@ -150,16 +204,14 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="3" class="p-8 text-center text-gray-400">
-                                    <i class='bx bx-group text-4xl mb-2'></i>
-                                    <p>Belum ada mahasiswa di kelas ini.</p>
-                                </td>
+                                <td colspan="3" class="p-8 text-center text-gray-400">Belum ada mahasiswa aktif.</td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
+
         </div>
 
     </div>
