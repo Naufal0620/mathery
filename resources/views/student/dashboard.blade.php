@@ -118,7 +118,7 @@
             @endif
 
             {{-- MODAL GABUNG KELAS --}}
-            <div id="modalJoinClass" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            {{-- <div id="modalJoinClass" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md transform scale-100 transition-all">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-xl font-bold text-gray-800">Gabung Kelas Baru</h3>
@@ -143,7 +143,7 @@
                         </button>
                     </form>
                 </div>
-            </div>
+            </div> --}}
         </div>
 
         {{-- 3. Kolom Kanan: Jadwal Upcoming (Timeline) --}}
@@ -189,7 +189,172 @@
                 <div class="text-3xl font-bold">0 <span class="text-sm font-normal text-orange-100">Selesai</span></div>
             </div>
         </div>
-
     </div>
 </div>
+
+{{-- MODAL GABUNG KELAS (REDESIGNED) --}}
+<div id="modalJoinClass" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-100 transition-all overflow-hidden">
+        
+        {{-- Header Modal --}}
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-800">Cari & Gabung Kelas</h3>
+            <button onclick="toggleModal('modalJoinClass')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition">
+                <i class='bx bx-x bx-sm'></i>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            {{-- Search Input --}}
+            <div class="relative group mb-6">
+                <input type="text" id="classSearchInput" autocomplete="off" placeholder="Ketik Nama Mata Kuliah..." class="w-full bg-white border border-gray-200 text-gray-700 rounded-xl pl-4 pr-10 py-3 text-sm focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition shadow-sm group-hover:border-indigo-300">
+                
+                {{-- Icons --}}
+                <div id="searchIconDefault" class="absolute right-3 top-3 text-gray-400">
+                    <i class='bx bx-search text-lg'></i>
+                </div>
+                <div id="searchIconLoading" class="absolute right-3 top-3 text-indigo-500 hidden">
+                    <i class='bx bx-loader-alt bx-spin text-lg'></i>
+                </div>
+            </div>
+
+            {{-- Results Container --}}
+            <div class="min-h-[150px]">
+                <p id="startMessage" class="text-center text-gray-400 text-sm py-8">
+                    <i class='bx bx-search-alt text-3xl mb-2 opacity-50 block'></i>
+                    Mulai ketik nama kelas untuk mencari.
+                </p>
+
+                <p id="noResultsMessage" class="hidden text-center text-gray-400 text-sm py-8">
+                    <i class='bx bx-ghost text-3xl mb-2 opacity-50 block'></i>
+                    Kelas tidak ditemukan.
+                </p>
+                
+                {{-- List Hasil (Scrollable) --}}
+                <div id="resultsList" class="hidden max-h-[300px] overflow-y-auto custom-scrollbar border border-gray-100 rounded-xl bg-white shadow-inner">
+                    <table class="w-full text-left text-sm">
+                        <tbody id="resultsTableBody" class="divide-y divide-gray-50">
+                            {{-- Data akan di-inject lewat JS di sini --}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    function toggleModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            // Fokus ke input saat modal dibuka
+            if(modalId === 'modalJoinClass') {
+                setTimeout(() => document.getElementById('classSearchInput').focus(), 100);
+            }
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // --- AJAX SEARCH LOGIC ---
+    const searchInput = document.getElementById('classSearchInput');
+    const searchIconDefault = document.getElementById('searchIconDefault');
+    const searchIconLoading = document.getElementById('searchIconLoading');
+    
+    const resultsList = document.getElementById('resultsList');
+    const resultsTableBody = document.getElementById('resultsTableBody');
+    const startMessage = document.getElementById('startMessage');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+
+    let searchTimeout = null;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+
+        // 1. UI State: Loading
+        clearTimeout(searchTimeout);
+        searchIconDefault.classList.add('hidden');
+        searchIconLoading.classList.remove('hidden');
+
+        // 2. Debounce (Tunggu user berhenti ngetik)
+        searchTimeout = setTimeout(() => {
+            if (query.length === 0) {
+                // Reset jika kosong
+                resetSearchUI();
+                return;
+            }
+            fetchClasses(query);
+        }, 600);
+    });
+
+    function fetchClasses(query) {
+        // Panggil Route AJAX
+        fetch(`{{ route('student.searchClasses') }}?search=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                renderResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Matikan Loading
+                searchIconDefault.classList.remove('hidden');
+                searchIconLoading.classList.add('hidden');
+            });
+    }
+
+    function renderResults(classes) {
+        // Bersihkan hasil lama
+        resultsTableBody.innerHTML = '';
+
+        // Toggle Visibility
+        startMessage.classList.add('hidden');
+        
+        if (classes.length === 0) {
+            resultsList.classList.add('hidden');
+            noResultsMessage.classList.remove('hidden');
+        } else {
+            noResultsMessage.classList.add('hidden');
+            resultsList.classList.remove('hidden');
+
+            // Loop data dan buat HTML Row
+            classes.forEach(cls => {
+                const row = `
+                    <tr class="hover:bg-indigo-50/30 transition group">
+                        <td class="p-3 pl-4">
+                            <p class="font-bold text-gray-700 text-sm group-hover:text-indigo-700 transition">${cls.name}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">${cls.code}</span>
+                                <span class="text-[11px] text-gray-400 flex items-center gap-1"><i class='bx bx-user'></i> ${cls.teacher ? cls.teacher.full_name : '-'}</span>
+                            </div>
+                        </td>
+                        <td class="p-3 pr-4 w-1 whitespace-nowrap text-right align-middle">
+                            <form action="{{ route('student.joinClass') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="class_id" value="${cls.id}">
+                                <button type="submit" class="inline-flex items-center justify-center bg-white border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 px-3 py-1.5 rounded-lg transition-all shadow-sm text-xs font-bold gap-1">
+                                    <i class='bx bx-plus'></i> Gabung
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                `;
+                resultsTableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+    }
+
+    function resetSearchUI() {
+        searchIconDefault.classList.remove('hidden');
+        searchIconLoading.classList.add('hidden');
+        resultsList.classList.add('hidden');
+        noResultsMessage.classList.add('hidden');
+        startMessage.classList.remove('hidden');
+        resultsTableBody.innerHTML = '';
+    }
+</script>
+@endpush
 @endsection

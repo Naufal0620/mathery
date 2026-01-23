@@ -7,7 +7,7 @@
 <div class="fade-in">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <p class="text-gray-500 text-sm">Kelola data kelas yang aktif pada semester ini.</p>
-        <button onclick="toggleModal('modalAddClass')" class="w-full sm:w-auto bg-gradient-to-r from-indigo-700 to-purple-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-none hover:opacity-90 transition-all flex items-center justify-center gap-2">
+        <button onclick="toggleModal('modalAddClass')" class="w-full sm:w-auto  hover:cursor-pointer bg-gradient-to-r from-indigo-700 to-purple-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-none hover:opacity-90 transition-all flex items-center justify-center gap-2">
             <i class='bx bx-plus'></i> Buat Kelas Baru
         </button>
     </div>
@@ -52,7 +52,7 @@
                 <div class="flex gap-2">
                     <button 
                         onclick="openEditModal('{{ $course->id }}', '{{ $courseNameOnly }}', '{{ $classNameOnly }}', '{{ $course->description }}')"
-                        class="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
+                        class="flex-1 px-3 py-2 hover:cursor-pointer text-sm font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
                         <i class='bx bx-edit-alt'></i> Edit
                     </button>
                     
@@ -60,7 +60,7 @@
                     <form action="{{ route('admin.classes.destroy', $course->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Yakin ingin menghapus kelas ini?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="w-full px-3 py-2 text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                        <button type="submit" class="w-full px-3 py-2 hover:cursor-pointer text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
                             <i class='bx bx-trash'></i> Hapus
                         </button>
                     </form>
@@ -114,8 +114,8 @@
             </div>
 
             <div class="pt-4 flex justify-end gap-3">
-                <button type="button" onclick="toggleModal('modalAddClass')" class="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-indigo-700 to-purple-600 text-white rounded-xl font-medium shadow-lg shadow-indigo-200 hover:shadow-none transition">Simpan Kelas</button>
+                <button type="button" onclick="toggleModal('modalAddClass')" class="px-6 py-3 hover:cursor-pointer text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
+                <button type="submit" class="px-6 py-3 hover:cursor-pointer bg-gradient-to-r from-indigo-700 to-purple-600 text-white rounded-xl font-medium shadow-lg shadow-indigo-200 hover:shadow-none transition">Simpan Kelas</button>
             </div>
         </form>
     </div>
@@ -154,8 +154,8 @@
             </div>
 
             <div class="pt-4 flex justify-end gap-3">
-                <button type="button" onclick="toggleModal('modalEditClass')" class="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium shadow-lg shadow-orange-200 hover:shadow-none transition">Simpan Perubahan</button>
+                <button type="button" onclick="toggleModal('modalEditClass')" class="px-6 py-3 hover:cursor-pointer text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
+                <button type="submit" class="px-6 py-3 hover:cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium shadow-lg shadow-orange-200 hover:shadow-none transition">Simpan Perubahan</button>
             </div>
         </form>
     </div>

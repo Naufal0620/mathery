@@ -76,8 +76,11 @@ Route::middleware('auth')->group(function () {
         Route::controller(StudentController::class)->group(function () {
             Route::get('/dashboard', 'dashboard')->name('dashboard');
 
-            // Join Class
+            // Route Join (Update)
             Route::post('/join-class', 'joinClass')->name('joinClass');
+
+            // Route AJAX Search (Baru)
+            Route::get('/ajax/search-classes', 'searchClasses')->name('searchClasses');;
         });
     });
 });

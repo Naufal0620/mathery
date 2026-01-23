@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Link CSS Lokal (Pastikan file style.css ada di folder public/css) -->
-    @vite('resources/css/app.css')
+    @vite('resources/css/app.css?v=' . time())
 
     <!-- Boxicons v3.0.8 -->
     <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">

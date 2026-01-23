@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Link CSS Lokal (Pastikan file style.css ada di folder public/css) -->
-    @vite('resources/css/app.css')
+    @vite('resources/css/app.css?v=' . time())
 
     <!-- Boxicons v3.0.8 -->
     <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
@@ -67,7 +67,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Username / NIM</label>
                     <div class="relative">
                         <input type="text" name="username" value="{{ old('username') }}" required autofocus placeholder="Masukkan Username atau NIM" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
-                        <i class='bx bx-user absolute left-3 self-center text-gray-400 text-lg'></i>
+                        <i class='bx bx-user absolute left-3 top-3.5 self-center text-gray-400 text-lg'></i>
                     </div>
                 </div>
 
@@ -76,7 +76,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                     <div class="relative">
                         <input type="password" name="password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
-                        <i class='bx bx-lock absolute left-3 self-center text-gray-400 text-lg'></i>
+                        <i class='bx bx-lock absolute left-3 top-3.5 text-gray-400 text-lg'></i>
                     </div>
                 </div>
 

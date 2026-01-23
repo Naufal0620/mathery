@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Topic;
+use App\Models\Course;
 
 class StudentController extends Controller
 {
@@ -36,22 +37,45 @@ class StudentController extends Controller
         return view('student.dashboard', compact('myClasses', 'pendingClasses', 'upcomingSchedules'));
     }
 
-    public function joinClass(Request $request)
+    public function searchClasses(Request $request)
     {
-        $request->validate([
-            'code' => 'required|string|exists:classes,code',
-        ]);
-
-        $course = Course::where('code', $request->code)->firstOrFail();
+        $search = $request->get('search');
         $user = Auth::user();
 
-        // Cek apakah sudah tergabung/pending
-        if ($user->classes()->where('class_id', $course->id)->exists()) {
-            return redirect()->back()->with('error', 'Anda sudah tergabung atau sedang menunggu persetujuan di kelas ini.');
+        // Ambil ID kelas yang SUDAH diambil (active/pending) agar tidak muncul lagi
+        $joinedClassIds = $user->classes()->pluck('classes.id')->toArray();
+
+        $classes = collect();
+
+        if (!empty($search)) {
+            $classes = Course::with('teacher')
+                ->where('name', 'like', "%{$search}%") // Cari berdasarkan nama
+                ->whereNotIn('id', $joinedClassIds) // Kecualikan yang sudah join
+                ->where('is_active', true)
+                ->limit(10) // Batasi hasil
+                ->get();
+        }
+
+        return response()->json($classes);
+    }
+
+    public function joinClass(Request $request)
+    {
+        // Ubah validasi dari 'code' menjadi 'class_id'
+        $request->validate([
+            'class_id' => 'required|exists:classes,id',
+        ]);
+
+        $user = Auth::user();
+        $classId = $request->class_id;
+
+        // Cek double (Guard)
+        if ($user->classes()->where('classes.id', $classId)->exists()) {
+            return redirect()->back()->with('error', 'Anda sudah tergabung di kelas ini.');
         }
 
         // Attach dengan status PENDING
-        $user->classes()->attach($course->id, ['status' => 'pending']);
+        $user->classes()->attach($classId, ['status' => 'pending']);
 
         return redirect()->back()->with('success', 'Permintaan bergabung dikirim! Silakan tunggu persetujuan dosen.');
     }
