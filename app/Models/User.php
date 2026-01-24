@@ -24,14 +24,14 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    // Relasi: Mahasiswa bisa memiliki banyak kelas (lewat tabel pivot class_members)
-    // public function joinedClasses()
-    // {
-    //     return $this->belongsToMany(Course::class, 'class_members', 'user_id', 'class_id');
-    // }
-
+    // Relasi: Mahasiswa bisa memiliki banyak kelas (lewat tabel pivot class_members)\
     public function classes()
     {
         return $this->belongsToMany(Course::class, 'class_members', 'user_id', 'class_id');
+    }
+
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
     }
 }

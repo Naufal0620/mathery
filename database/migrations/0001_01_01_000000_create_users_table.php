@@ -11,25 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 1. Buat Tabel Users
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username', 50)->unique(); // Tambahan dari SQL Anda
+            $table->string('username', 50)->unique();
             $table->string('email', 100)->unique();
             $table->string('password');
-            $table->string('full_name', 100); // Menggantikan 'name'
-            // SQLite akan otomatis mengonversi enum menjadi varchar
+            $table->string('full_name', 100);
             $table->enum('role', ['admin', 'teacher', 'student'])->default('student'); 
             $table->string('avatar')->default('default.jpg');
             $table->timestamps();
         });
 
-        // ... (Biarkan table password_reset_tokens & sessions tetap ada untuk fitur auth Laravel)
+        // HAPUS BAGIAN Schema::table('users'...) YANG ADA GROUP_ID-NYA
+        // Karena tabel 'groups' belum dibuat saat file ini berjalan.
+        // Lagipula, group_id sudah kita pindahkan ke tabel 'class_members'.
+
+        // 2. Tabel Reset Password (Bawaan Laravel)
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
+        // 3. Tabel Sessions (Bawaan Laravel)
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -45,8 +50,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

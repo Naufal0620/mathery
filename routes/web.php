@@ -46,7 +46,6 @@ Route::middleware('auth')->group(function () {
         Route::controller(AdminController::class)->group(function () {
             Route::get('/dashboard', 'index')->name('dashboard');
             
-            // ... (Route admin lainnya tetap sama) ...
             Route::get('/classes', 'classes')->name('classes');
             Route::post('/classes', 'storeClass')->name('classes.store');
             Route::put('/classes/{id}', 'updateClass')->name('classes.update');
@@ -66,6 +65,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/users', 'storeUser')->name('users.store');
             Route::put('/users/{id}', 'updateUser')->name('users.update');
             Route::delete('/users/{id}', 'destroyUser')->name('users.destroy');
+
+            // Route Management Group
+            Route::post('/groups', 'storeGroup')->name('groups.store');
+            Route::delete('/groups/{id}', 'destroyGroup')->name('groups.destroy');
+            
+            // Approval Keluar Kelompok
+            Route::put('/classes/{class_id}/members/{student_id}/leave-approve', 'approveGroupLeave')->name('groups.leave.approve');
+            Route::put('/classes/{class_id}/members/{student_id}/leave-reject', 'rejectGroupLeave')->name('groups.leave.reject');
             
             Route::get('/activity', 'activity')->name('activity');
         });
@@ -76,11 +83,20 @@ Route::middleware('auth')->group(function () {
         Route::controller(StudentController::class)->group(function () {
             Route::get('/dashboard', 'dashboard')->name('dashboard');
 
+            // --- TAMBAHAN BARU ---
+            Route::get('/my-classes', 'myClasses')->name('myClasses'); // Halaman "Kelas Saya"
+            Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman "Detail Kelas"
+            // ---------------------
+
             // Route Join (Update)
             Route::post('/join-class', 'joinClass')->name('joinClass');
 
             // Route AJAX Search (Baru)
-            Route::get('/ajax/search-classes', 'searchClasses')->name('searchClasses');;
+            Route::get('/ajax/search-classes', 'searchClasses')->name('searchClasses');
+
+            Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman detail kelas
+            Route::post('/group/{groupId}/join', 'joinGroup')->name('group.join');
+            Route::post('/class/{classId}/group/leave', 'requestLeaveGroup')->name('group.leave');
         });
     });
 });

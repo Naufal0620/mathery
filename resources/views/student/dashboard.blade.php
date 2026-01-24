@@ -88,7 +88,7 @@
                 {{-- Grid Kelas Aktif --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                     @foreach($myClasses as $class)
-                    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition group cursor-pointer relative overflow-hidden">
+                    <a href="{{ route('student.class.show', $class->id) }}" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition group cursor-pointer relative overflow-hidden">
                         {{-- Stripe Biru --}}
                         <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-500 group-hover:w-2 transition-all duration-300"></div>
                         
@@ -112,7 +112,7 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </a>
                     @endforeach
                 </div>
             @endif

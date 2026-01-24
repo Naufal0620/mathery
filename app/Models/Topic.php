@@ -22,4 +22,9 @@ class Topic extends Model
     {
         return $this->belongsTo(Course::class, 'class_id');
     }
+
+    public function groups()
+    {
+        return $this->hasMany(Group::class, 'topic_id');
+    }
 }

@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
                 'full_name' => 'Super Admin',
                 'username' => 'admin',
                 'email' => 'admin@mathery.com',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('admin'),
                 'role' => 'admin',
             ],
             [

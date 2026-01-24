@@ -35,4 +35,15 @@ class Course extends Model
                     ->withPivot('id', 'joined_at')
                     ->withTimestamps();
     }
+
+    public function topics()
+    {
+        return $this->hasMany(Topic::class, 'class_id');
+    }
+
+    // Relasi ke Kelompok (Groups)
+    public function groups()
+    {
+        return $this->hasMany(Group::class, 'class_id');
+    }
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use App\Models\Course;
 use App\Models\Topic;
 use App\Models\User;
+use App\Models\Group;
 
 class AdminController extends Controller
 {
@@ -316,6 +317,63 @@ class AdminController extends Controller
         $course->students()->detach($student_id);
 
         return redirect()->back()->with('success', 'Mahasiswa dihapus/ditolak dari kelas.');
+    }
+
+    public function storeGroup(Request $request)
+    {
+        $request->validate([
+            'class_id'  => 'required|exists:classes,id',
+            'topic_id'  => 'required|exists:topics,id', // Wajib pilih topik
+            'name'      => 'required|string|max:100',
+            'max_slots' => 'required|integer|min:1',
+        ]);
+
+        Group::create([
+            'class_id'  => $request->class_id,
+            'topic_id'  => $request->topic_id,
+            'name'      => $request->name,
+            'max_slots' => $request->max_slots,
+        ]);
+
+        return redirect()->back()->with('success', 'Kelompok berhasil dibuat untuk topik tersebut.');
+    }
+
+    // 2. Menyetujui Permintaan Keluar Kelompok
+    public function approveGroupLeave($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        // Update pivot class_members: set group_id jadi NULL dan reset flag request
+        $course->students()->updateExistingPivot($student_id, [
+            'group_id' => null,
+            'is_requesting_group_leave' => false
+        ]);
+
+        return redirect()->back()->with('success', 'Mahasiswa diizinkan keluar dari kelompok.');
+    }
+
+    // 3. Menolak Permintaan Keluar
+    public function rejectGroupLeave($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        // Hanya reset flag request, group_id tetap
+        $course->students()->updateExistingPivot($student_id, [
+            'is_requesting_group_leave' => false
+        ]);
+
+        return redirect()->back()->with('success', 'Permintaan keluar ditolak.');
+    }
+
+    // 4. Menghapus Kelompok
+    public function destroyGroup($id)
+    {
+        $group = Group::findOrFail($id);
+        
+        // Otomatis foreign key di class_members akan jadi NULL (karena onDelete set null di migration)
+        $group->delete(); 
+
+        return redirect()->back()->with('success', 'Kelompok berhasil dihapus.');
     }
 
     public function activity()
