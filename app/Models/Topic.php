@@ -17,10 +17,14 @@ class Topic extends Model
         'meeting_date',
     ];
 
-    // Relasi ke Kelas (Ingat, kita pakai nama model Course untuk tabel classes)
     public function course()
     {
         return $this->belongsTo(Course::class, 'class_id');
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(Material::class, 'topic_id');
     }
 
     public function groups()

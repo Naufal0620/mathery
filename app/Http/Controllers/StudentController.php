@@ -101,15 +101,25 @@ class StudentController extends Controller
 
         // 1. Cari kelasnya & pastikan user terdaftar (accepted)
         // Menggunakan 'whereHas' atau filter di collection untuk keamanan akses
+        // $course = $user->classes()
+        //     ->where('classes.id', $id)
+        //     ->wherePivot('status', 'accepted')
+        //     ->with([
+        //         'teacher',
+        //         'topics' => function($q) {
+        //             $q->orderBy('meeting_date', 'asc');
+        //         },
+        //         'groups.students' // Load groups dan anggotanya
+        //     ])
+        //     ->first();
+
         $course = $user->classes()
             ->where('classes.id', $id)
             ->wherePivot('status', 'accepted')
             ->with([
                 'teacher', 
-                'topics' => function($q) {
-                    $q->orderBy('meeting_date', 'asc');
-                },
-                'groups.students' // Load groups dan anggotanya
+                'topics.materials', // <--- TAMBAHKAN '.materials' DI SINI
+                'groups.students'
             ])
             ->first();
 
