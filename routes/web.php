@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/users/{id}', 'destroyUser')->name('users.destroy');
 
             // Route Management Group
+            Route::get('/classes/{id}/groups', 'classGroups')->name('classes.groups');
             Route::post('/groups', 'storeGroup')->name('groups.store');
             Route::delete('/groups/{id}', 'destroyGroup')->name('groups.destroy');
             

@@ -24,10 +24,13 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    // Relasi: Mahasiswa bisa memiliki banyak kelas (lewat tabel pivot class_members)\
+    // Relasi: Mahasiswa bisa memiliki banyak kelas (lewat tabel pivot class_members)
     public function classes()
     {
-        return $this->belongsToMany(Course::class, 'class_members', 'user_id', 'class_id');
+        // Tambahkan ->withPivot(...) agar kolom status terbaca
+        return $this->belongsToMany(Course::class, 'class_members', 'user_id', 'class_id')
+                    ->withPivot('id', 'status', 'group_id', 'is_requesting_group_leave', 'joined_at')
+                    ->withTimestamps();
     }
 
     public function group()

@@ -1,6 +1,6 @@
 @extends('layouts.student')
 
-@section('title', 'Dashboard Mahasiswa')
+@section('title', 'Dashboard - Mathery Mahasiswa')
 @section('header_title', 'Dashboard')
 
 @section('content')

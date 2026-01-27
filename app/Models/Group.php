@@ -28,8 +28,8 @@ class Group extends Model
     public function students()
     {
         return $this->belongsToMany(User::class, 'class_members', 'group_id', 'user_id')
-            ->where('class_members.class_id', $this->class_id) // Pastikan konteks kelasnya sama
-            ->withPivot('status', 'is_requesting_group_leave');
+            ->withPivot('status', 'is_requesting_group_leave')
+            ->withTimestamps();
     }
     
     // Helper untuk cek penuh atau tidak

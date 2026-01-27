@@ -5,17 +5,21 @@
     
     {{-- 1. HEADER KELAS --}}
     <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8 border border-gray-100">
-        <div class="h-40 bg-linear-to-r from-indigo-600 to-purple-400 relative">
-            <div class="absolute inset-0 bg-black/10"></div> <div class="absolute bottom-0 left-0 p-6 w-full text-white">
+        <div class="h-50 lg:h-40 bg-linear-to-r from-indigo-600 to-purple-400 relative">
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute bottom-0 left-0 p-6 w-full text-white">
                 <div class="flex items-end justify-between">
                     <div>
                         <h1 class="text-3xl font-bold mb-1 shadow-black drop-shadow-md">{{ $course->name }}</h1>
-                        <p class="text-blue-100 text-sm font-medium flex items-center gap-4">
+
+                        <p class="text-blue-100 text-sm font-medium md:flex items-center gap-4">
                             <span class="flex items-center gap-1 bg-white/20 px-2 py-1 rounded">
-                                <i class="fas fa-barcode"></i> {{ $course->code }}
+                                <i class="bx bx-qr"></i> {{ $course->code }}
                             </span>
                             <span class="flex items-center gap-1">
-                                <i class="fas fa-chalkboard-teacher"></i> Dosen: {{ $course->teacher->full_name }}
+                                <span class="flex items-center gap-1 px-2 py-1 rounded">
+                                    <i class="bx bx-whiteboard"></i> Dosen: {{ $course->teacher->full_name }}
+                                </span>
                             </span>
                         </p>
                     </div>
@@ -38,9 +42,6 @@
                 <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-book-reader text-blue-600"></i> Rencana Pembelajaran
                 </h2>
-                <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {{ $course->topics->count() }} Pertemuan
-                </span>
             </div>
 
             @forelse($course->topics as $topic)
@@ -88,7 +89,7 @@
                             </div>
                         @else
                             <div class="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400 italic flex items-center gap-1">
-                                <i class="fas fa-info-circle"></i> Belum ada materi yang diunggah dosen.
+                                <i class="fas fa-info-circle"></i> Belum ada materi yang diunggah.
                             </div>
                         @endif
                     </div>

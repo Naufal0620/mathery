@@ -122,11 +122,11 @@
             <div class="flex items-center gap-4">
                 <div class="text-right hidden md:block">
                     <!-- Data Dinamis User -->
-                    <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->name ?? 'Dr. Budi Santoso' }}</p>
+                    <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->full_name ?? 'Dr. Budi Santoso' }}</p>
                     <p class="text-xs text-indigo-600 font-medium">Administrator</p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-700 to-purple-500 p-[2px]">
-                    <img src="https://ui-avatars.com/api/?name=Budi+Santoso&background=fff" class="w-full h-full rounded-full border-2 border-white object-cover">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->full_name) }}&background=random" class="w-full h-full rounded-full border-2 border-white object-cover">
                 </div>
             </div>
         </nav>

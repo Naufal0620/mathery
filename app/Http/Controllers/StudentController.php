@@ -138,10 +138,17 @@ class StudentController extends Controller
         $user = Auth::user();
         $group = Group::findOrFail($groupId);
 
-        // Validasi: User harus anggota kelas tersebut
-        $membership = $user->classes()->where('classes.id', $group->class_id)->first();
+        // FIX: Tambahkan ->withPivot('status') di sini juga untuk keamanan ganda
+        $membership = $user->classes()
+            ->where('classes.id', $group->class_id)
+            ->withPivot('status') 
+            ->first();
+
+        // Debugging (jika masih error, cek nilai ini)
+        // dd($membership->pivot->status); 
+
         if (!$membership || $membership->pivot->status !== 'accepted') {
-            return redirect()->back()->with('error', 'Akses ditolak.');
+            return redirect()->back()->with('error', 'Akses ditolak. Anda belum resmi diterima di kelas ini.');
         }
 
         // Validasi: Apakah user sudah punya kelompok di kelas ini?

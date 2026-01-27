@@ -319,6 +319,18 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Mahasiswa dihapus/ditolak dari kelas.');
     }
 
+    public function classGroups($id)
+    {
+        $course = Course::findOrFail($id);
+        
+        // Ambil groups beserta relasi topiknya dan siswanya
+        // Kita juga butuh list topics untuk dropdown saat buat kelompok baru
+        $groups = $course->groups()->with(['topic', 'students'])->get();
+        $topics = $course->topics()->orderBy('meeting_date', 'asc')->get();
+
+        return view('admin.class_groups', compact('course', 'groups', 'topics'));
+    }
+
     public function storeGroup(Request $request)
     {
         $request->validate([
