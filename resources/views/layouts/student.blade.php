@@ -68,10 +68,10 @@
                 <span class="font-medium">Kelas Saya</span>
             </a>
 
-            <a href="#" 
+            <a href="{{ route('student.projects.index') }}" 
                class="nav-item flex items-center space-x-3 w-full p-3 rounded-xl transition-all duration-300 group hover:text-white hover:bg-gradient-to-r hover:from-indigo-700 hover:to-purple-600 text-gray-600">
                 <i class='bx bx-task bx-sm'></i>
-                <span class="font-medium">Tugas & Proyek</span>
+                <span class="font-medium">Galeri Projek</span>
             </a>
 
             <a href="#" 

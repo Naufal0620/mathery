@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Topic;
 use App\Models\Course;
 use App\Models\Group;
+use App\Models\StudentProject;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -179,5 +182,65 @@ class StudentController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Permintaan keluar kelompok dikirim ke dosen.');
+    }
+
+    public function allProjects(Request $request)
+    {
+        // Ambil kelas yang diikuti mahasiswa (untuk opsi upload nanti jika diperlukan)
+        $myClasses = Auth::user()->classes()->wherePivot('status', 'accepted')->get();
+        
+        // Ambil semua kelas untuk filter
+        $allClasses = \App\Models\Course::all();
+
+        // Query Projek Global
+        $query = StudentProject::with(['student', 'course', 'group']);
+
+        if ($request->has('class_id') && $request->class_id != '') {
+            $query->where('class_id', $request->class_id);
+        }
+
+        $projects = $query->latest()->paginate(12);
+
+        return view('student.projects.index', compact('projects', 'allClasses', 'myClasses'));
+    }
+
+    public function createProject($classId)
+    {
+        $user = Auth::user();
+        $course = Course::findOrFail($classId);
+
+        // Validasi akses (User harus anggota kelas)
+        // ... (gunakan logika validasi yang sudah ada sebelumnya) ...
+
+        return view('student.project_create', compact('course'));
+    }
+
+    // UPDATE fungsi storeProject yang lama
+    public function storeProject(Request $request, $classId)
+    {
+        $user = Auth::user();
+        
+        // 1. Cek Membership & Kelompok
+        $membership = $user->classes()->where('classes.id', $classId)->withPivot('group_id')->first();
+
+        if (!$membership || !$membership->pivot->group_id) {
+            return back()->with('error', 'Anda harus bergabung ke dalam sebuah KELOMPOK terlebih dahulu sebelum upload projek.');
+        }
+
+        // ... (Validasi & Upload Gambar sama seperti sebelumnya) ...
+
+        StudentProject::create([
+            'student_id'  => $user->id,
+            'class_id'    => $classId,
+            'group_id'    => $membership->pivot->group_id, // <--- OTOMATIS ISI GROUP ID
+            'title'       => $request->title,
+            'slug'        => \Illuminate\Support\Str::slug($request->title) . '-' . time(),
+            'description' => $request->description,
+            'thumbnail'   => $thumbnailPath ?? 'project_default.jpg', // Pastikan variabel path didefinisikan
+            'project_url' => $request->project_url,
+            'repo_url'    => $request->repo_url,
+        ]);
+
+        return redirect()->route('student.projects.index')->with('success', 'Projek kelompok berhasil dipublikasikan!');
     }
 }

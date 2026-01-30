@@ -74,6 +74,11 @@ Route::middleware('auth')->group(function () {
             // Approval Keluar Kelompok
             Route::put('/classes/{class_id}/members/{student_id}/leave-approve', 'approveGroupLeave')->name('groups.leave.approve');
             Route::put('/classes/{class_id}/members/{student_id}/leave-reject', 'rejectGroupLeave')->name('groups.leave.reject');
+
+            Route::get('/projects-gallery', [AdminController::class, 'allProjects'])->name('projects.index');
+            Route::get('/classes/{id}/projects', 'classProjects')->name('classes.projects');
+            Route::put('/projects/{id}/toggle-featured', 'toggleFeaturedProject')->name('projects.toggle-featured');
+            Route::delete('/projects/{id}', 'destroyProject')->name('projects.destroy');
             
             Route::get('/activity', 'activity')->name('activity');
         });
@@ -98,6 +103,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman detail kelas
             Route::post('/group/{groupId}/join', 'joinGroup')->name('group.join');
             Route::post('/class/{classId}/group/leave', 'requestLeaveGroup')->name('group.leave');
+
+            Route::get('/projects-gallery', [StudentController::class, 'allProjects'])->name('projects.index');
+            Route::get('/class/{classId}/project/create', 'createProject')->name('project.create');
+            Route::post('/class/{classId}/project/store', 'storeProject')->name('project.store');
         });
     });
 });

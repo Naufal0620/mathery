@@ -80,6 +80,12 @@
                 <span class="font-medium">Jadwal & Topik</span>
             </a>
 
+            <a href="{{ route('admin.projects.index') }}" 
+               class="nav-item flex items-center space-x-3 w-full p-3 rounded-xl transition-all duration-300 group {{ request()->routeIs('admin.projects.index') ? 'text-white bg-gradient-to-r from-indigo-700 to-purple-600 shadow-md' : 'text-gray-600 hover:text-white hover:bg-gradient-to-r hover:from-indigo-700 hover:to-purple-600' }}">
+                <i class='bx bx-task bx-sm'></i>
+                <span class="font-medium">Galeri Projek</span>
+            </a>
+
             <a href="{{ route('admin.users') }}" 
                class="nav-item flex items-center space-x-3 w-full p-3 rounded-xl transition-all duration-300 group {{ request()->routeIs('admin.users') ? 'text-white bg-gradient-to-r from-indigo-700 to-purple-600 shadow-md' : 'text-gray-600 hover:text-white hover:bg-gradient-to-r hover:from-indigo-700 hover:to-purple-600' }}">
                 <i class='bx bx-education bx-sm'></i>

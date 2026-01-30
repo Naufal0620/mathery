@@ -107,6 +107,23 @@
 
         {{-- 3. LIST KELOMPOK (Kolom Kanan / Sidebar) --}}
         <div class="space-y-6">
+            {{-- TAMBAHKAN INI DI KOLOM KANAN (SIDEBAR) --}}
+            {{-- Letakkan sebelum atau sesudah blok "Kelompok Belajar" --}}
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-3 opacity-10">
+                    <i class='bx bx-rocket text-6xl text-blue-600'></i>
+                </div>
+                
+                <h3 class="font-bold text-gray-800 text-lg mb-2 relative z-10">Projek Kelas</h3>
+                <p class="text-sm text-gray-600 mb-4 relative z-10 leading-relaxed">
+                    Sudah menyelesaikan tugas akhir/projek kelompok? Kumpulkan hasil karya Anda di sini.
+                </p>
+
+                <a href="{{ route('student.project.create', $course->id) }}" class="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-center rounded-lg font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 relative z-10">
+                    <i class='bx bx-upload mr-1'></i> Upload Projek
+                </a>
+            </div>
             <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                 <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-users text-purple-600"></i> Kelompok
