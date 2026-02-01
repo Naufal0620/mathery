@@ -61,6 +61,10 @@ Route::middleware('auth')->group(function () {
             Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update');
             Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy');
 
+            Route::get('/materials', [AdminController::class, 'materialsIndex'])->name('materials.index');
+            Route::post('/materials', [AdminController::class, 'storeMaterial'])->name('materials.store');
+            Route::delete('/materials/{id}', [AdminController::class, 'destroyMaterial'])->name('materials.destroy');
+
             Route::get('/users', 'users')->name('users');
             Route::post('/users', 'storeUser')->name('users.store');
             Route::put('/users/{id}', 'updateUser')->name('users.update');
@@ -103,6 +107,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman detail kelas
             Route::post('/group/{groupId}/join', 'joinGroup')->name('group.join');
             Route::post('/class/{classId}/group/leave', 'requestLeaveGroup')->name('group.leave');
+
+            // Route materi
+            Route::get('/materials', [StudentController::class, 'materialsIndex'])->name('materials.index');
+            Route::post('/materials', [StudentController::class, 'storeMaterial'])->name('materials.store');
 
             Route::get('/projects-gallery', [StudentController::class, 'allProjects'])->name('projects.index');
             Route::get('/class/{classId}/project/create', 'createProject')->name('project.create');

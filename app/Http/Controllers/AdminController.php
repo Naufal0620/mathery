@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Course;
 use App\Models\Topic;
 use App\Models\User;
 use App\Models\Group;
+use App\Models\Material;
 use App\Models\StudentProject;
 
 class AdminController extends Controller
@@ -165,6 +167,96 @@ class AdminController extends Controller
         $topic->delete();
 
         return redirect()->back()->with('success', 'Topik berhasil dihapus.');
+    }
+
+    public function materialsIndex(Request $request)
+    {
+        $courses = Course::all();
+        $selectedCourse = null;
+        $topics = collect();
+
+        // Query Dasar
+        $query = Material::with(['author', 'topic.course']);
+
+        // Filter by Class
+        if ($request->has('class_id') && $request->class_id != '') {
+            $selectedCourse = Course::find($request->class_id);
+            if ($selectedCourse) {
+                // Filter materi berdasarkan topik yang ada di kelas ini
+                $query->whereHas('topic', function($q) use ($selectedCourse) {
+                    $q->where('class_id', $selectedCourse->id);
+                });
+                // Ambil topik untuk dropdown filter & upload
+                $topics = $selectedCourse->topics; 
+            }
+        }
+
+        // Filter by Topic
+        if ($request->has('topic_id') && $request->topic_id != '') {
+            $query->where('topic_id', $request->topic_id);
+        }
+
+        $materials = $query->latest()->paginate(10);
+
+        return view('admin.materials_index', compact('materials', 'courses', 'topics', 'selectedCourse'));
+    }
+
+    public function storeMaterial(Request $request)
+    {
+        // 1. Definisi Aturan Dasar
+        $rules = [
+            'topic_id' => 'required|exists:topics,id',
+            'title'    => 'required|string|max:200',
+            'type'     => 'required|in:pdf,video,ppt,link', // Tipe yang diizinkan
+        ];
+
+        // 2. Validasi File Berdasarkan Tipe (Whitelist Ekstensi)
+        if ($request->type === 'pdf') {
+            $rules['file'] = 'required|file|mimes:pdf|max:10240'; // Max 10MB
+        } 
+        elseif ($request->type === 'ppt') {
+            $rules['file'] = 'required|file|mimes:ppt,pptx|max:10240';
+        } 
+        elseif ($request->type === 'video') {
+            $rules['file'] = 'required|file|mimes:mp4,webm,ogg|max:20480'; // Max 20MB
+        } 
+        elseif ($request->type === 'link') {
+            $rules['url'] = 'required|url';
+        }
+
+        // Jalankan Validasi
+        $request->validate($rules);
+
+        // 3. Proses Upload
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('materials', 'public');
+        }
+
+        Material::create([
+            'topic_id'     => $request->topic_id,
+            'author_id'    => Auth::id(),
+            'title'        => $request->title,
+            'slug'         => Str::slug($request->title) . '-' . time(),
+            'type'         => $request->type,
+            'file_path'    => $filePath ?? $request->url,
+            'is_published' => true,
+        ]);
+
+        return back()->with('success', 'Materi berhasil diunggah.');
+    }
+
+    public function destroyMaterial($id)
+    {
+        $material = Material::findOrFail($id);
+        
+        // Hapus file fisik jika bukan link
+        if (!in_array($material->type, ['link', 'article']) && $material->file_path) {
+            Storage::disk('public')->delete($material->file_path);
+        }
+        
+        $material->delete();
+        return back()->with('success', 'Materi berhasil dihapus.');
     }
 
     public function users(Request $request)

@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Topic;
-use App\Models\Course;
 use App\Models\Group;
+use App\Models\Course;
+use App\Models\Material;
 use App\Models\StudentProject;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -242,5 +243,109 @@ class StudentController extends Controller
         ]);
 
         return redirect()->route('student.projects.index')->with('success', 'Projek kelompok berhasil dipublikasikan!');
+    }
+
+    public function materialsIndex(Request $request)
+    {
+        $user = Auth::user();
+        
+        // 1. Ambil Kelas Mahasiswa (Accepted Only), urutkan dari yang terbaru bergabung
+        $myClasses = $user->classes()
+            ->wherePivot('status', 'accepted')
+            ->orderByPivot('created_at', 'desc')
+            ->get();
+        
+        // 2. Tentukan Kelas yang Dipilih
+        $selectedClass = null;
+        if ($request->has('class_id') && $request->class_id != '') {
+            $selectedClass = $myClasses->where('id', $request->class_id)->first();
+        } else {
+            // Default: Ambil kelas paling baru
+            $selectedClass = $myClasses->first();
+        }
+
+        $topics = collect(); // Default kosong
+        $myAssignedTopic = null;
+
+        if ($selectedClass) {
+            // 3. Ambil Topik beserta Materinya (Group by Topic secara struktur data)
+            $topics = Topic::where('class_id', $selectedClass->id)
+                ->with(['materials' => function($q) {
+                    $q->with('author')->latest(); // Urutkan materi dari terbaru
+                }])
+                ->orderBy('meeting_date', 'asc') // Urutkan pertemuan
+                ->get();
+
+            // 4. Cek Hak Akses Upload (Tugas Kelompok)
+            $membership = $user->classes()
+                ->where('classes.id', $selectedClass->id)
+                ->withPivot('group_id')
+                ->first();
+
+            if ($membership && $membership->pivot->group_id) {
+                $group = \App\Models\Group::find($membership->pivot->group_id);
+                if ($group && $group->topic_id) {
+                    $myAssignedTopic = Topic::find($group->topic_id);
+                }
+            }
+        }
+
+        return view('student.materials_index', compact('topics', 'myClasses', 'selectedClass', 'myAssignedTopic'));
+    }
+
+    public function storeMaterial(Request $request)
+    {
+        // 1. Aturan Dasar
+        $rules = [
+            'class_id' => 'required',
+            'title'    => 'required|string|max:200',
+            'type'     => 'required|in:pdf,ppt,link', // Mahasiswa biasanya hanya upload dokumen/ppt/link
+        ];
+
+        // 2. Whitelist Ekstensi Mahasiswa
+        if ($request->type === 'pdf') {
+            $rules['file'] = 'required|file|mimes:pdf|max:5120'; // Max 5MB
+        } 
+        elseif ($request->type === 'ppt') {
+            $rules['file'] = 'required|file|mimes:ppt,pptx|max:5120';
+        } 
+        elseif ($request->type === 'link') {
+            $rules['url'] = 'required|url';
+        }
+
+        $request->validate($rules);
+
+        $user = Auth::user();
+
+        // 1. Cek User anggota kelas
+        $membership = $user->classes()->where('classes.id', $request->class_id)->withPivot('group_id')->first();
+        if (!$membership || !$membership->pivot->group_id) {
+            return back()->with('error', 'Anda belum memiliki kelompok di kelas ini.');
+        }
+
+        // 2. Cek Kelompok punya Topik
+        $group = \App\Models\Group::find($membership->pivot->group_id);
+        if (!$group || !$group->topic_id) {
+            return back()->with('error', 'Kelompok Anda belum diberikan topik tugas oleh Dosen.');
+        }
+
+        // Proses Upload
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('materials', 'public');
+        }
+
+        // ... (Create Material) ...
+        Material::create([
+            'topic_id'     => $group->topic_id, // OTOMATIS KE TOPIK KELOMPOK
+            'author_id'    => $user->id,
+            'title'        => $request->title,
+            'slug'         => Str::slug($request->title) . '-' . time(),
+            'type'         => $request->type,
+            'file_path'    => $filePath ?? $request->url,
+            'is_published' => true,
+        ]);
+        
+        return back()->with('success', 'Materi kelompok berhasil diunggah!');
     }
 }
