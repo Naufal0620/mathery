@@ -5,190 +5,188 @@
 
 @section('content')
 <div class="fade-in">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <p class="text-gray-500 text-sm">Kelola data kelas yang aktif pada semester ini.</p>
-        <button onclick="toggleModal('modalAddClass')" class="w-full sm:w-auto  hover:cursor-pointer bg-gradient-to-r from-indigo-700 to-purple-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-none hover:opacity-90 transition-all flex items-center justify-center gap-2">
-            <i class='bx bx-plus'></i> Buat Kelas Baru
+    
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">Daftar Kelas Aktif</h2>
+            <p class="text-sm text-gray-500">Kelola kelas, mahasiswa, dan topik pembelajaran.</p>
+        </div>
+        <button onclick="openModal('createClassModal')" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-105 transition-all flex items-center gap-2">
+            <i class='bx bx-plus-circle text-xl'></i> Buat Kelas Baru
         </button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        
-        {{-- LOOPING DATA KELAS DARI DATABASE --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($courses as $course)
-        <div class="group bg-white p-6 rounded-2xl border border-gray-200 hover:border-indigo-400 shadow-sm hover:shadow-md transition-all">
-            <div class="flex justify-between items-start mb-4">
-                {{-- Ambil huruf pertama nama kelas untuk ikon --}}
-                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    {{ substr($course->name, 0, 1) }}
-                </div>
-                <span class="{{ $course->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} px-3 py-1 rounded-full text-xs font-bold">
-                    {{ $course->is_active ? 'Aktif' : 'Non-Aktif' }}
-                </span>
-            </div>
+        <div class="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
             
-            <h3 class="font-bold text-gray-800 text-lg">{{ $course->name }}</h3>
-            <p class="text-sm text-gray-500 mb-4">Kode: <span class="font-mono bg-gray-100 px-1 rounded text-gray-800">{{ $course->code }}</span></p>
-            
-            <div class="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-100 pt-4">
-                {{-- Menggunakan withCount 'students' yang kita definisikan di Controller --}}
-                <span class="flex items-center gap-1"><i class='bx bx-user'></i> {{ $course->students_count ?? 0 }} Mhs</span>
-                <span class="flex items-center gap-1"><i class='bx bx-folder'></i> - Topik</span>
-            </div>
-            
-            <div class="flex flex-col gap-2 mt-4">
-                {{-- Tombol Edit dengan Data Attributes --}}
-                {{-- Kita pecah string "Kalkulus II - Kelas A" menjadi dua bagian untuk diumpan ke form --}}
-                @php
-                    $parts = explode(' - ', $course->name, 2);
-                    $courseNameOnly = $parts[0] ?? $course->name;
-                    $classNameOnly = $parts[1] ?? '';
-                @endphp
-
-                <a href="{{ route('admin.classes.members', $course->id) }}" class="w-full py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-lg transition text-center flex items-center justify-center gap-2">
-                    <i class='bx bx-group'></i> Atur Anggota
-                </a>
-
-                <div class="flex gap-2">
-                    <button 
-                        onclick="openEditModal('{{ $course->id }}', '{{ $courseNameOnly }}', '{{ $classNameOnly }}', '{{ $course->description }}')"
-                        class="flex-1 px-3 py-2 hover:cursor-pointer text-sm font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition">
-                        <i class='bx bx-edit-alt'></i> Edit
-                    </button>
-                    
-                    {{-- Form Delete --}}
-                    <form action="{{ route('admin.classes.destroy', $course->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Yakin ingin menghapus kelas ini?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-full px-3 py-2 hover:cursor-pointer text-sm font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
-                            <i class='bx bx-trash'></i> Hapus
+            <div class="h-24 bg-gradient-to-r from-indigo-500 to-purple-600 p-5 relative">
+                <div class="absolute top-4 right-4">
+                    <div class="relative" x-data="{ open: false }">
+                        <button onclick="toggleDropdown('dropdown-{{ $course->id }}')" class="text-white/80 hover:text-white transition-colors">
+                            <i class='bx bx-dots-vertical-rounded text-2xl'></i>
                         </button>
-                    </form>
+                        <div id="dropdown-{{ $course->id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-100 py-1 text-left origin-top-right transform transition-all">
+                            <a href="{{ route('admin.classes.members', $course->id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class='bx bx-user mr-2'></i> Anggota Kelas
+                            </a>
+                            <a href="{{ route('admin.syllabus', ['filter_class' => $course->id]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class='bx bx-book-content mr-2'></i> Lihat Silabus
+                            </a>
+                            <button onclick="editClass({{ $course->id }}, '{{ explode(' - ', $course->name)[0] }}', '{{ explode(' - ', $course->name)[1] ?? '' }}', '{{ $course->description }}')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">
+                                <i class='bx bx-edit mr-2'></i> Edit Info
+                            </button>
+                            <div class="border-t border-gray-100 my-1"></div>
+                            <form action="{{ route('admin.classes.destroy', $course->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus kelas ini? Semua data terkait akan hilang.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                    <i class='bx bx-trash mr-2'></i> Hapus Kelas
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
+                <h3 class="text-white font-bold text-lg truncate pr-6">{{ $course->name }}</h3>
+                <p class="text-indigo-100 text-xs font-medium uppercase tracking-wider opacity-90">{{ $course->code }}</p>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col">
+                <p class="text-gray-500 text-sm mb-4 line-clamp-2 min-h-[40px]">
+                    {{ $course->description ?? 'Tidak ada deskripsi untuk kelas ini.' }}
+                </p>
+                
+                <div class="grid grid-cols-2 gap-3 mt-auto">
+                    <div class="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                        <span class="block text-xl font-bold text-indigo-600">{{ $course->students_count }}</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase">Mahasiswa</span>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                        <span class="block text-xl font-bold text-purple-600">{{ $course->topics_count }}</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase">Topik</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                <a href="{{ route('admin.classes.members', $course->id) }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    Kelola Anggota <i class='bx bx-right-arrow-alt'></i>
+                </a>
+                <span class="text-xs text-gray-400" title="Dibuat pada">{{ $course->created_at->format('d M Y') }}</span>
             </div>
         </div>
         @empty
-        <div class="col-span-1 md:col-span-2 text-center py-10 text-gray-400">
-            <i class='bx bx-ghost text-4xl mb-2'></i>
-            <p>Belum ada kelas yang dibuat.</p>
+        <div class="col-span-full flex flex-col items-center justify-center py-12 text-center text-gray-400">
+            <div class="bg-gray-100 p-4 rounded-full mb-3">
+                <i class='bx bx-chalkboard bx-lg text-gray-300'></i>
+            </div>
+            <p class="text-lg font-medium text-gray-500">Belum ada kelas yang dibuat.</p>
+            <p class="text-sm mb-4">Silakan buat kelas baru untuk memulai.</p>
+            <button onclick="openModal('createClassModal')" class="text-indigo-600 font-medium hover:underline">Buat Kelas Sekarang</button>
         </div>
         @endforelse
-
     </div>
-</div>
 
-<div id="modalAddClass" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg transform scale-100 transition-all max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h3 class="text-2xl font-bold text-gray-800">Buat Kelas Baru</h3>
-                <p class="text-sm text-gray-500">Isi detail kelas untuk semester ini</p>
-            </div>
-            <button onclick="toggleModal('modalAddClass')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition">
-                <i class='bx bx-x bx-sm'></i>
-            </button>
-        </div>
+    <div id="createClassModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeModal('createClassModal')"></div>
         
-        {{-- UPDATE ACTION FORM DI SINI --}}
-        <form class="space-y-5" action="{{ route('admin.classes.store') }}" method="POST">
-            @csrf
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Mata Kuliah</label>
-                <input type="text" name="course_name" required placeholder="Contoh: Kalkulus II" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 fade-in">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="modalTitle" class="text-xl font-bold text-gray-800">Buat Kelas Baru</h3>
+                <button onclick="closeModal('createClassModal')" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class='bx bx-x bx-md'></i>
+                </button>
             </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Kelas</label>
-                    <input type="text" name="class_name" required placeholder="Contoh: Kelas A" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
+
+            <form id="classForm" action="{{ route('admin.classes.store') }}" method="POST">
+                @csrf
+                <div id="methodField"></div> <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Mata Kuliah</label>
+                        <div class="relative">
+                            <i class='bx bx-book absolute left-3 top-3 text-gray-400'></i>
+                            <input type="text" name="course_name" id="course_name" placeholder="Contoh: Kalkulus Dasar" required
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas / Kode Seksi</label>
+                        <div class="relative">
+                            <i class='bx bx-building absolute left-3 top-3 text-gray-400'></i>
+                            <input type="text" name="class_name" id="class_name" placeholder="Contoh: Kelas A / Reguler B" required
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi (Opsional)</label>
+                        <textarea name="description" id="description" rows="3" placeholder="Deskripsi singkat tentang kelas ini..."
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm"></textarea>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kode (Auto)</label>
-                    <input type="text" value="Auto-Generated" disabled class="w-full bg-gray-200 border border-gray-300 rounded-xl px-4 py-3 text-gray-500 font-mono">
+
+                <div class="mt-6 flex gap-3">
+                    <button type="button" onclick="closeModal('createClassModal')" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Simpan Kelas</button>
                 </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi</label>
-                <textarea rows="3" name="description" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"></textarea>
-            </div>
-
-            <div class="pt-4 flex justify-end gap-3">
-                <button type="button" onclick="toggleModal('modalAddClass')" class="px-6 py-3 hover:cursor-pointer text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
-                <button type="submit" class="px-6 py-3 hover:cursor-pointer bg-gradient-to-r from-indigo-700 to-purple-600 text-white rounded-xl font-medium shadow-lg shadow-indigo-200 hover:shadow-none transition">Simpan Kelas</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modalEditClass" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg transform scale-100 transition-all max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h3 class="text-2xl font-bold text-gray-800">Edit Kelas</h3>
-                <p class="text-sm text-gray-500">Perbarui informasi kelas</p>
-            </div>
-            <button onclick="toggleModal('modalEditClass')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition">
-                <i class='bx bx-x bx-sm'></i>
-            </button>
+            </form>
         </div>
-        
-        {{-- Form Update --}}
-        <form id="formEditClass" action="#" method="POST" class="space-y-5">
-            @csrf
-            @method('PUT') {{-- Method Spoofing untuk PUT --}}
-            
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Mata Kuliah</label>
-                <input type="text" id="edit_course_name" name="course_name" required class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Kelas</label>
-                <input type="text" id="edit_class_name" name="class_name" required class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition">
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi</label>
-                <textarea rows="3" id="edit_description" name="description" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"></textarea>
-            </div>
-
-            <div class="pt-4 flex justify-end gap-3">
-                <button type="button" onclick="toggleModal('modalEditClass')" class="px-6 py-3 hover:cursor-pointer text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition">Batal</button>
-                <button type="submit" class="px-6 py-3 hover:cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-medium shadow-lg shadow-orange-200 hover:shadow-none transition">Simpan Perubahan</button>
-            </div>
-        </form>
     </div>
+
 </div>
 
 @push('scripts')
 <script>
-    // Fungsi Toggle Modal (Bisa dipakai untuk Add maupun Edit)
-    function toggleModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal.classList.contains('hidden')) {
-            modal.classList.remove('hidden');
-        } else {
-            modal.classList.add('hidden');
+    function toggleDropdown(id) {
+        // Tutup semua dropdown lain dulu
+        document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
+            if (el.id !== id) el.classList.add('hidden');
+        });
+        
+        const dropdown = document.getElementById(id);
+        dropdown.classList.toggle('hidden');
+    }
+
+    // Klik di luar dropdown untuk menutup
+    window.onclick = function(event) {
+        if (!event.target.closest('.relative')) {
+            document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
+                el.classList.add('hidden');
+            });
         }
     }
 
-    // Fungsi Khusus untuk Membuka Modal Edit dan Mengisi Data
-    function openEditModal(id, courseName, className, description) {
-        // 1. Set Action URL pada Form agar mengarah ke ID yang benar
-        // Kita buat URL template lalu replace string 'ID_PLACEHOLDER' dengan ID asli
-        let urlTemplate = "{{ route('admin.classes.update', 'ID_PLACEHOLDER') }}";
-        let finalUrl = urlTemplate.replace('ID_PLACEHOLDER', id);
+    function openModal(modalID) {
+        document.getElementById(modalID).classList.remove('hidden');
         
-        document.getElementById('formEditClass').action = finalUrl;
+        // Reset form ke mode Create
+        document.getElementById('modalTitle').innerText = 'Buat Kelas Baru';
+        document.getElementById('classForm').action = "{{ route('admin.classes.store') }}";
+        document.getElementById('methodField').innerHTML = '';
+        document.getElementById('course_name').value = '';
+        document.getElementById('class_name').value = '';
+        document.getElementById('description').value = '';
+    }
 
-        // 2. Isi Value Input
-        document.getElementById('edit_course_name').value = courseName;
-        document.getElementById('edit_class_name').value = className;
-        document.getElementById('edit_description').value = description;
+    function closeModal(modalID) {
+        document.getElementById(modalID).classList.add('hidden');
+    }
 
-        // 3. Tampilkan Modal
-        toggleModal('modalEditClass');
+    function editClass(id, courseName, className, description) {
+        openModal('createClassModal');
+        
+        // Setup mode Edit
+        document.getElementById('modalTitle').innerText = 'Edit Kelas';
+        let url = "{{ route('admin.classes.update', ':id') }}";
+        url = url.replace(':id', id);
+        
+        document.getElementById('classForm').action = url;
+        document.getElementById('methodField').innerHTML = '@method("PUT")';
+        
+        document.getElementById('course_name').value = courseName;
+        document.getElementById('class_name').value = className;
+        document.getElementById('description').value = description;
     }
 </script>
 @endpush

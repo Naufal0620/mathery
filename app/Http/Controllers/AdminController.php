@@ -71,31 +71,32 @@ class AdminController extends Controller
 
     public function classes()
     {
-        // Ambil semua data kelas, urutkan dari yang terbaru
-        // Kita gunakan 'withCount' untuk menghitung jumlah mahasiswa (students) secara otomatis
-        $courses = Course::withCount('students')->latest()->get();
+        // REVISI: Tambahkan withCount 'topics' juga agar kartu lebih informatif
+        $courses = Course::withCount(['students', 'topics'])
+            ->latest()
+            ->get();
 
         return view('admin.classes', compact('courses'));
     }
 
     public function storeClass(Request $request)
     {
-        // 1. Validasi Input
         $request->validate([
             'course_name' => 'required|string|max:100',
             'class_name'  => 'required|string|max:50',
             'description' => 'nullable|string',
         ]);
 
-        // 2. Generate Kode Unik (Misal: KAL-A-X7Z)
-        // Ambil 3 huruf pertama nama matkul + nama kelas + random string
+        // Generate Kode Unik: 3 huruf matkul + nama kelas + 3 random string
         $prefix = strtoupper(substr($request->course_name, 0, 3));
         $suffix = strtoupper(Str::random(3));
-        $generatedCode = $prefix . '-' . str_replace(' ', '', strtoupper($request->class_name)) . '-' . $suffix;
+        // Membersihkan spasi di nama kelas agar kode lebih rapi
+        $cleanClassName = str_replace(' ', '', strtoupper($request->class_name));
+        
+        $generatedCode = "{$prefix}-{$cleanClassName}-{$suffix}";
 
-        // 3. Simpan ke Database
         Course::create([
-            'teacher_id'  => Auth::id() ?? 1, // Gunakan ID user login, atau 1 jika belum ada auth
+            'teacher_id'  => Auth::id() ?? 1,
             'name'        => $request->course_name . ' - ' . $request->class_name,
             'code'        => $generatedCode,
             'description' => $request->description,
@@ -107,34 +108,20 @@ class AdminController extends Controller
 
     public function updateClass(Request $request, $id)
     {
-        // 1. Validasi
         $request->validate([
             'course_name' => 'required|string|max:100',
             'class_name'  => 'required|string|max:50',
             'description' => 'nullable|string',
         ]);
 
-        // 2. Cari Kelas
         $course = Course::findOrFail($id);
 
-        // 3. Update Data
-        // Kita update nama gabungan agar tetap konsisten
         $course->update([
             'name'        => $request->course_name . ' - ' . $request->class_name,
             'description' => $request->description,
-            // Note: Kode kelas (code) biasanya tidak diubah agar tidak merusak relasi
         ]);
 
-        // 4. Redirect dengan pesan sukses (akan ditangkap Toastr)
-        return redirect()->route('admin.classes')->with('success', 'Data kelas berhasil diperbarui!');
-    }
-
-    public function destroyClass($id)
-    {
-        $course = Course::findOrFail($id);
-        $course->delete();
-
-        return redirect()->back()->with('success', 'Kelas berhasil dihapus.');
+        return redirect()->route('admin.classes')->with('success', 'Informasi kelas diperbarui!');
     }
 
     public function syllabus(Request $request)
