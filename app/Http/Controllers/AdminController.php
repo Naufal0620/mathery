@@ -18,11 +18,55 @@ class AdminController extends Controller
 {
     public function index()
     {
-        // Menghitung statistik ringkas untuk dashboard
-        $totalClasses = Course::count();
-        // Anda bisa menambahkan count lain jika modelnya sudah ada (Student, Topic, dll)
-        
-        return view('admin.dashboard', compact('totalClasses'));
+        // 1. Mengambil Statistik Real-time
+        $stats = [
+            'students' => User::where('role', 'student')->count(),
+            'projects' => StudentProject::count(),
+            'materials' => Material::count(),
+            'topics'   => Topic::count(),
+        ];
+
+        // 2. Mengambil "Aktivitas Terbaru" (Gabungan Materi & Projek)
+        // Kita ambil 5 Materi terbaru
+        $latestMaterials = Material::with(['author', 'topic.course'])
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type' => 'material',
+                    'actor' => $item->author->full_name ?? 'Admin',
+                    'action' => 'Mengupload Materi: ' . Str::limit($item->title, 20),
+                    'class' => $item->topic->course->name ?? '-',
+                    'time' => $item->created_at,
+                    'icon' => 'bx-upload',
+                    'color' => 'text-blue-500',
+                ];
+            });
+
+        // Kita ambil 5 Projek terbaru
+        $latestProjects = StudentProject::with(['student', 'course'])
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type' => 'project',
+                    'actor' => $item->student->full_name ?? 'Mahasiswa',
+                    'action' => 'Mengirim Projek: ' . Str::limit($item->title, 20),
+                    'class' => $item->course->name ?? '-',
+                    'time' => $item->created_at,
+                    'icon' => 'bx-folder-plus',
+                    'color' => 'text-purple-500',
+                ];
+            });
+
+        // Gabungkan, urutkan berdasarkan waktu terbaru, dan ambil 5 teratas
+        $recentActivities = $latestMaterials->merge($latestProjects)
+            ->sortByDesc('time')
+            ->take(6);
+
+        return view('admin.dashboard', compact('stats', 'recentActivities'));
     }
 
     public function classes()
