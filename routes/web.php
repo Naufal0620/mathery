@@ -79,10 +79,14 @@ Route::middleware('auth')->group(function () {
             Route::put('/classes/{class_id}/members/{student_id}/leave-approve', 'approveGroupLeave')->name('groups.leave.approve');
             Route::put('/classes/{class_id}/members/{student_id}/leave-reject', 'rejectGroupLeave')->name('groups.leave.reject');
 
-            Route::get('/projects-gallery', [AdminController::class, 'allProjects'])->name('projects.index');
-            Route::get('/classes/{id}/projects', 'classProjects')->name('classes.projects');
-            Route::put('/projects/{id}/toggle-featured', 'toggleFeaturedProject')->name('projects.toggle-featured');
-            Route::delete('/projects/{id}', 'destroyProject')->name('projects.destroy');
+            // Route::get('/projects-gallery', [AdminController::class, 'allProjects'])->name('projects.index');
+            // Route::get('/classes/{id}/projects', 'classProjects')->name('classes.projects');
+            // Route::put('/projects/{id}/toggle-featured', 'toggleFeaturedProject')->name('projects.toggle-featured');
+            // Route::delete('/projects/{id}', 'destroyProject')->name('projects.destroy');
+
+            Route::get('/projects', [AdminController::class, 'projectsIndex'])->name('projects.index');
+            Route::put('/projects/{id}/feature', [AdminController::class, 'toggleFeaturedProject'])->name('projects.feature');
+            Route::delete('/projects/{id}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
             
             Route::get('/activity', 'activity')->name('activity');
         });
@@ -112,9 +116,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/materials', [StudentController::class, 'materialsIndex'])->name('materials.index');
             Route::post('/materials', [StudentController::class, 'storeMaterial'])->name('materials.store');
 
-            Route::get('/projects-gallery', [StudentController::class, 'allProjects'])->name('projects.index');
-            Route::get('/class/{classId}/project/create', 'createProject')->name('project.create');
-            Route::post('/class/{classId}/project/store', 'storeProject')->name('project.store');
+            // Route::get('/projects-gallery', [StudentController::class, 'allProjects'])->name('projects.index');
+            // Route::get('/class/{classId}/project/create', 'createProject')->name('project.create');
+            // Route::post('/class/{classId}/project/store', 'storeProject')->name('project.store');
+
+            Route::get('/projects', [StudentController::class, 'projectsIndex'])->name('projects.index');
+            Route::post('/projects', [StudentController::class, 'storeProject'])->name('projects.store');
         });
     });
 });

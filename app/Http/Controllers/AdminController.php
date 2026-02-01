@@ -481,62 +481,45 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Kelompok berhasil dihapus.');
     }
 
-    public function allProjects(Request $request)
+    public function projectsIndex(Request $request)
     {
-        // Ambil semua kelas untuk filter dropdown
-        $classes = \App\Models\Course::all();
+        // 1. Data untuk Filter Dropdown
+        $courses = Course::all();
 
-        // Query Projek
+        // 2. Query Projek
         $query = StudentProject::with(['student', 'course', 'group']);
 
-        // Logika Filter Berdasarkan Kelas
+        // Filter berdasarkan Kelas
         if ($request->has('class_id') && $request->class_id != '') {
             $query->where('class_id', $request->class_id);
         }
 
-        $projects = $query->latest()->paginate(12);
+        // Sorting: Featured dulu, lalu terbaru
+        $projects = $query->orderBy('is_featured', 'desc')
+                          ->latest()
+                          ->paginate(12);
 
-        return view('admin.projects.index', compact('projects', 'classes'));
+        return view('admin.projects.index', compact('projects', 'courses'));
     }
 
-    public function classProjects($id)
-    {
-        $course = Course::findOrFail($id);
-        
-        // Ambil projek urutkan dari yang featured duluan, lalu terbaru
-        $projects = StudentProject::where('class_id', $id)
-            ->with('student')
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('admin.class_projects', compact('course', 'projects'));
-    }
-
-    // 2. Toggle Featured (On/Off)
     public function toggleFeaturedProject($id)
     {
         $project = StudentProject::findOrFail($id);
-        
-        // Balik statusnya (true jadi false, false jadi true)
-        $project->update([
-            'is_featured' => !$project->is_featured
-        ]);
+        $project->update(['is_featured' => !$project->is_featured]); // Switch status
 
-        $status = $project->is_featured ? 'dijadikan Featured.' : 'dihapus dari Featured.';
-        return back()->with('success', 'Status projek berhasil diubah: ' . $status);
+        $status = $project->is_featured ? 'ditandai sebagai Featured.' : 'dihapus dari Featured.';
+        return back()->with('success', 'Projek berhasil ' . $status);
     }
-    
-    // 3. Hapus Projek (Optional, jaga-jaga ada konten tidak pantas)
+
     public function destroyProject($id)
     {
         $project = StudentProject::findOrFail($id);
-        
-        // Hapus gambar jika bukan default
+
+        // Hapus gambar thumbnail jika bukan default
         if ($project->thumbnail && $project->thumbnail !== 'project_default.jpg') {
             Storage::disk('public')->delete($project->thumbnail);
         }
-        
+
         $project->delete();
         return back()->with('success', 'Projek berhasil dihapus.');
     }
