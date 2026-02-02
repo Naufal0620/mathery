@@ -65,8 +65,9 @@ Route::middleware('auth')->group(function () {
             Route::put('/syllabus/{id}', [AdminController::class, 'updateTopic'])->name('syllabus.update');
             Route::delete('/syllabus/{id}', [AdminController::class, 'destroyTopic'])->name('syllabus.destroy');
 
-            Route::get('/materials', [AdminController::class, 'materialsIndex'])->name('materials.index');
+            Route::get('/materials', [AdminController::class, 'materials'])->name('materials.index');
             Route::post('/materials', [AdminController::class, 'storeMaterial'])->name('materials.store');
+            Route::put('/materials/{id}', [AdminController::class, 'updateMaterial'])->name('materials.update');
             Route::delete('/materials/{id}', [AdminController::class, 'destroyMaterial'])->name('materials.destroy');
 
             Route::get('/users', 'users')->name('users');

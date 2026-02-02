@@ -403,94 +403,135 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Topik pertemuan dihapus.');
     }
 
-    public function materialsIndex(Request $request)
+    public function materials(Request $request)
     {
-        $courses = Course::all();
+        // 1. Ambil list kelas untuk filter
+        $courses = Course::orderBy('name', 'asc')->get();
+        
         $selectedCourse = null;
-        $topics = collect();
+        $topics = collect(); // Untuk dropdown di modal
+        $materials = collect(); // Data utama
 
-        // Query Dasar
-        $query = Material::with(['author', 'topic.course']);
+        if ($request->filled('filter_class')) {
+            $classId = $request->filter_class;
+            $selectedCourse = Course::find($classId);
 
-        // Filter by Class
-        if ($request->has('class_id') && $request->class_id != '') {
-            $selectedCourse = Course::find($request->class_id);
             if ($selectedCourse) {
-                // Filter materi berdasarkan topik yang ada di kelas ini
-                $query->whereHas('topic', function($q) use ($selectedCourse) {
-                    $q->where('class_id', $selectedCourse->id);
-                });
-                // Ambil topik untuk dropdown filter & upload
-                $topics = $selectedCourse->topics; 
+                // Ambil Topik dari kelas ini (untuk dropdown create/edit)
+                $topics = Topic::where('class_id', $classId)
+                    ->orderBy('meeting_date', 'asc')
+                    ->get();
+
+                // Ambil Materi yang topic-nya ada di kelas ini
+                $materials = Material::with(['topic', 'author'])
+                    ->whereHas('topic', function($q) use ($classId) {
+                        $q->where('class_id', $classId);
+                    })
+                    ->latest()
+                    ->get();
             }
         }
 
-        // Filter by Topic
-        if ($request->has('topic_id') && $request->topic_id != '') {
-            $query->where('topic_id', $request->topic_id);
-        }
-
-        $materials = $query->latest()->paginate(10);
-
-        return view('admin.materials_index', compact('materials', 'courses', 'topics', 'selectedCourse'));
+        return view('admin.materials_index', compact('courses', 'selectedCourse', 'topics', 'materials'));
     }
 
     public function storeMaterial(Request $request)
     {
-        // 1. Definisi Aturan Dasar
-        $rules = [
-            'topic_id' => 'required|exists:topics,id',
-            'title'    => 'required|string|max:200',
-            'type'     => 'required|in:pdf,video,ppt,link', // Tipe yang diizinkan
-        ];
+        $request->validate([
+            'topic_id'    => 'required|exists:topics,id',
+            'title'       => 'required|string|max:150',
+            'type'        => 'required|in:file,video,link',
+            'file'        => 'required_if:type,file,video|file|max:20480', // Max 20MB
+            'url'         => 'required_if:type,link|nullable|url',
+            'description' => 'nullable|string',
+        ]);
 
-        // 2. Validasi File Berdasarkan Tipe (Whitelist Ekstensi)
-        if ($request->type === 'pdf') {
-            $rules['file'] = 'required|file|mimes:pdf|max:10240'; // Max 10MB
-        } 
-        elseif ($request->type === 'ppt') {
-            $rules['file'] = 'required|file|mimes:ppt,pptx|max:10240';
-        } 
-        elseif ($request->type === 'video') {
-            $rules['file'] = 'required|file|mimes:mp4,webm,ogg|max:20480'; // Max 20MB
-        } 
-        elseif ($request->type === 'link') {
-            $rules['url'] = 'required|url';
-        }
-
-        // Jalankan Validasi
-        $request->validate($rules);
-
-        // 3. Proses Upload
         $filePath = null;
         if ($request->hasFile('file')) {
-            $filePath = $request->file('file')->store('materials', 'public');
+            $file = $request->file('file');
+            // Simpan di folder: materials/TOPIC_ID/
+            $filePath = $file->storeAs(
+                'materials/' . $request->topic_id, 
+                time() . '_' . $file->getClientOriginalName(), 
+                'public'
+            );
         }
 
         Material::create([
-            'topic_id'     => $request->topic_id,
-            'author_id'    => Auth::id(),
-            'title'        => $request->title,
-            'slug'         => Str::slug($request->title) . '-' . time(),
-            'type'         => $request->type,
-            'file_path'    => $filePath ?? $request->url,
-            'is_published' => true,
+            'topic_id'    => $request->topic_id,
+            'author_id'   => Auth::id(),
+            'title'       => $request->title,
+            'slug'        => Str::slug($request->title . '-' . Str::random(5)),
+            'type'        => $request->type,
+            'file_path'   => $filePath, // Null jika tipe link
+            'url'         => $request->type === 'link' ? $request->url : null,
+            'description' => $request->description,
+            'is_published'=> true,
         ]);
 
-        return back()->with('success', 'Materi berhasil diunggah.');
+        return redirect()->back()->with('success', 'Materi berhasil diupload.');
+    }
+
+    public function updateMaterial(Request $request, $id)
+    {
+        $request->validate([
+            'title'       => 'required|string|max:150',
+            'topic_id'    => 'required|exists:topics,id',
+            'description' => 'nullable|string',
+            // Kita tidak validasi file/url wajib disini karena mungkin user tidak ingin mengubahnya
+        ]);
+
+        $material = Material::findOrFail($id);
+        
+        $data = [
+            'title'       => $request->title,
+            'topic_id'    => $request->topic_id,
+            'description' => $request->description,
+        ];
+
+        // Cek jika ada file baru
+        if ($request->hasFile('file')) {
+            // Hapus file lama jika ada
+            if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
+                Storage::disk('public')->delete($material->file_path);
+            }
+            
+            $file = $request->file('file');
+            $data['file_path'] = $file->storeAs(
+                'materials/' . $request->topic_id, 
+                time() . '_' . $file->getClientOriginalName(), 
+                'public'
+            );
+            $data['url'] = null; // Reset URL jika ganti jadi file
+            $data['type'] = 'file'; // Asumsi jika upload file, tipe jadi file/video
+        } 
+        // Cek jika ada URL baru (dan tipe diubah jadi link)
+        elseif ($request->filled('url')) {
+             // Hapus file lama jika ada
+             if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
+                Storage::disk('public')->delete($material->file_path);
+            }
+            $data['url'] = $request->url;
+            $data['file_path'] = null;
+            $data['type'] = 'link';
+        }
+
+        $material->update($data);
+
+        return redirect()->back()->with('success', 'Materi berhasil diperbarui.');
     }
 
     public function destroyMaterial($id)
     {
         $material = Material::findOrFail($id);
-        
-        // Hapus file fisik jika bukan link
-        if (!in_array($material->type, ['link', 'article']) && $material->file_path) {
+
+        if ($material->file_path && Storage::disk('public')->exists($material->file_path)) {
             Storage::disk('public')->delete($material->file_path);
         }
-        
+
         $material->delete();
-        return back()->with('success', 'Materi berhasil dihapus.');
+
+        return redirect()->back()->with('success', 'Materi dihapus.');
     }
 
     public function users(Request $request)
