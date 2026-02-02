@@ -55,6 +55,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/classes/{id}/members', 'storeClassMember')->name('classes.members.store');
             Route::delete('/classes/{id}/members/{student_id}', 'destroyClassMember')->name('classes.members.destroy');
             Route::put('/classes/{id}/members/{student_id}/approve', 'approveMember')->name('classes.members.approve');
+
+            Route::put('/groups/{id}', [AdminController::class, 'updateGroup'])->name('groups.update');
+            Route::post('/groups/{id}/members', [AdminController::class, 'storeGroupMember'])->name('groups.members.store');
+            Route::delete('/groups/{group_id}/members/{student_id}', [AdminController::class, 'removeGroupMember'])->name('groups.members.destroy');
             
             Route::get('/syllabus', 'syllabus')->name('syllabus');
             Route::post('/syllabus', 'storeTopic')->name('syllabus.store');

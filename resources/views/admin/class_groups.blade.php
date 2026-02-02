@@ -1,209 +1,290 @@
 @extends('layouts.admin')
 
-@section('title', 'Manajemen Kelompok - ' . $course->name)
+@section('title', 'Kelola Kelompok - ' . $course->name)
+@section('header_title', 'Manajemen Kelompok')
 
 @section('content')
-<div class="container-fluid px-4">
+<div class="fade-in space-y-6">
     
-    {{-- HEADER & TABS --}}
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">{{ $course->name }}</h1>
-                <p class="text-gray-500 text-sm mb-4">Kode Kelas: {{ $course->code }}</p>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{{ route('admin.classes') }}" class="hover:text-indigo-600 transition-colors">Manajemen Kelas</a>
+                <i class='bx bx-chevron-right'></i>
+                <span>Kelompok</span>
             </div>
-            <a href="{{ route('admin.classes') }}" class="text-gray-500 hover:text-blue-600 text-sm font-medium transition flex items-center gap-1">
-                <i class='bx bx-arrow-back text-lg'></i> Kembali
-            </a>
+            <h2 class="text-2xl font-bold text-gray-800">Daftar Kelompok</h2>
+            <p class="text-sm text-gray-500">Kelola pembagian kelompok untuk {{ $course->name }}</p>
         </div>
+        
+        <div class="flex flex-wrap gap-3">
+            @if($leavingStudents->isNotEmpty())
+            <button onclick="showLeaveRequests()" class="px-4 py-2 bg-red-100 text-red-600 text-sm font-bold rounded-xl border border-red-200 hover:bg-red-200 transition-all flex items-center gap-2 animate-pulse-slow">
+                <i class='bx bx-log-out-circle'></i>
+                <span>{{ $leavingStudents->count() }} Permintaan Keluar</span>
+            </button>
+            @endif
 
-        {{-- Tab Navigation --}}
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8">
-                <a href="{{ route('admin.classes.members', $course->id) }}" 
-                   class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
-                   <i class='bx bx-group mr-2 text-lg'></i> Anggota Kelas
-                </a>
-
-                <a href="{{ route('admin.classes.groups', $course->id) }}" 
-                   class="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
-                   <i class='bx bx-layer mr-2 text-lg'></i> Manajemen Kelompok
-                </a>
-            </nav>
+            <a href="{{ route('admin.classes.members', $course->id) }}" class="px-4 py-2 bg-white text-indigo-600 text-sm font-medium rounded-xl border border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 transition-all flex items-center gap-2">
+                <i class='bx bx-user text-lg'></i> Kelola Anggota
+            </a>
+            
+            <button onclick="openModal('createGroupModal')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                <i class='bx bx-plus-circle text-xl'></i> Buat Kelompok
+            </button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {{-- KOLOM KIRI: FORM BUAT KELOMPOK --}}
-        <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-6 overflow-hidden">
-                
-                <div class="p-5 border-b border-gray-100 bg-gray-50/50">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                        <i class='bx bx-folder-plus text-blue-500 text-xl'></i> Buat Kelompok
-                    </h3>
-                    <p class="text-xs text-gray-500 mt-1">Buat kelompok baru berdasarkan topik.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        @forelse($groups as $group)
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col h-full group hover:shadow-md transition-shadow overflow-hidden">
+            
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-lg group-name">{{ $group->name }}</h3>
+                    <div class="flex items-center gap-1 mt-1 text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded w-fit">
+                        <i class='bx bx-book-bookmark'></i>
+                        {{ $group->topic->name ?? 'Topik Dihapus' }}
+                    </div>
                 </div>
                 
-                <div class="p-5">
-                    <form action="{{ route('admin.groups.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="class_id" value="{{ $course->id }}">
-
-                        <div class="space-y-4">
-                            {{-- Input Topik --}}
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Topik Pembahasan</label>
-                                <div class="relative">
-                                    <select name="topic_id" required class="w-full bg-white border border-gray-300 text-gray-700 rounded-lg py-2.5 pl-3 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm appearance-none">
-                                        <option value="">-- Pilih Topik --</option>
-                                        @foreach($topics as $topic)
-                                            <option value="{{ $topic->id }}">{{ $topic->name }} ({{ \Carbon\Carbon::parse($topic->meeting_date)->format('d M') }})</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                                        <i class='bx bx-chevron-down text-lg'></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Input Nama --}}
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Nama Kelompok</label>
-                                <div class="relative">
-                                    <input type="text" name="name" required placeholder="Contoh: Kelompok 1" 
-                                        class="w-full bg-white border border-gray-300 text-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class='bx bx-text text-gray-400 text-lg'></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Input Slot --}}
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Kuota Anggota</label>
-                                <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-                                    <button type="button" onclick="document.getElementById('slots').stepDown()" class="px-3 py-2 bg-gray-50 hover:bg-gray-100 border-r border-gray-300 text-gray-600 transition">
-                                        <i class='bx bx-minus'></i>
-                                    </button>
-                                    <input type="number" id="slots" name="max_slots" value="5" min="1" required class="w-full text-center border-none focus:ring-0 text-sm py-2 bg-white h-full text-gray-700 font-medium">
-                                    <button type="button" onclick="document.getElementById('slots').stepUp()" class="px-3 py-2 bg-gray-50 hover:bg-gray-100 border-l border-gray-300 text-gray-600 transition">
-                                        <i class='bx bx-plus'></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 mt-2">
-                                <i class='bx bx-save text-lg'></i> Simpan Kelompok
-                            </button>
-                        </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="editGroup({{ $group->id }}, '{{ $group->name }}', {{ $group->max_slots }})" class="text-gray-400 hover:text-orange-500 p-1.5 rounded-lg hover:bg-orange-50 transition-colors" title="Edit Info">
+                        <i class='bx bx-edit text-xl'></i>
+                    </button>
+                    {{-- REVISI: SweetAlert2 untuk Hapus Kelompok --}}
+                    <form action="{{ route('admin.groups.destroy', $group->id) }}" method="POST" onsubmit="return deleteGroupConfirm(event)">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Hapus Kelompok">
+                            <i class='bx bx-trash text-xl'></i>
+                        </button>
                     </form>
                 </div>
             </div>
-        </div>
 
-        {{-- KOLOM KANAN: DAFTAR KELOMPOK --}}
-        <div class="lg:col-span-2 space-y-5">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-gray-800 text-lg">Daftar Kelompok Aktif</h3>
-                <span class="bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1 rounded-full border border-blue-100">
-                    Total: {{ $groups->count() }}
-                </span>
+            <div class="p-4 flex-1 flex flex-col">
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Anggota <span class="{{ $group->students->count() >= $group->max_slots ? 'text-red-500' : 'text-green-500' }}">({{ $group->students->count() }}/{{ $group->max_slots }})</span>
+                    </p>
+                    @if($group->students->count() < $group->max_slots)
+                    <button onclick="addMember({{ $group->id }}, '{{ $group->name }}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
+                        <i class='bx bx-plus'></i> Tambah
+                    </button>
+                    @endif
+                </div>
+                
+                <div class="space-y-1 overflow-y-auto max-h-[200px] overflow-x-hidden custom-scrollbar pr-1">
+                    @forelse($group->students as $member)
+                    <div class="flex justify-between items-center group/member p-2 rounded-lg transition-colors even:bg-gray-50 hover:!bg-indigo-50">
+                        <div class="flex items-center gap-3 flex-1 min-w-0"> 
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($member->full_name) }}&background=random" class="w-7 h-7 rounded-full bg-gray-200 shrink-0">
+                            <span class="text-sm text-gray-700 font-medium truncate" title="{{ $member->full_name }}">
+                                {{ $member->full_name }}
+                            </span>
+                        </div>
+                        {{-- REVISI: SweetAlert2 untuk Keluarkan Anggota --}}
+                        <form action="{{ route('admin.groups.members.destroy', [$group->id, $member->id]) }}" method="POST" onsubmit="return removeMemberConfirm(event, '{{ $member->full_name }}')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="text-gray-300 hover:text-red-500 opacity-0 group-hover/member:opacity-100 transition-all p-1 shrink-0 ml-2" title="Keluarkan">
+                                <i class='bx bx-x-circle text-lg'></i>
+                            </button>
+                        </form>
+                    </div>
+                    @empty
+                    <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/30 mx-1">
+                        <span class="text-xs text-gray-400">Belum ada anggota</span>
+                    </div>
+                    @endforelse
+                </div>
             </div>
+        </div>
+        @empty
+        <div class="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <i class='bx bx-group bx-lg mb-2 text-gray-300'></i>
+            <p>Belum ada kelompok yang dibuat.</p>
+        </div>
+        @endforelse
+    </div>
 
-            @forelse($groups as $group)
-                {{-- Card Kelompok (Style mirip "Pending Requests") --}}
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all">
-                    {{-- Header Card --}}
-                    <div class="bg-gray-50/40 px-5 py-3 border-b border-gray-100 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-gray-800 text-lg flex items-center gap-2">
-                                {{ $group->name }}
-                                @if($group->isFull())
-                                    <span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full border border-red-200">PENUH</span>
-                                @endif
-                            </h4>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="text-xs text-gray-500 flex items-center gap-1">
-                                    <i class='bx bx-tag'></i> {{ $group->topic->name ?? 'Tanpa Topik' }}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-4">
-                            {{-- Progress Bar Slot --}}
-                            <div class="text-right hidden sm:block">
-                                <span class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">
-                                    {{ $group->students->count() }} / {{ $group->max_slots }} Anggota
-                                </span>
-                                <div class="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full {{ $group->isFull() ? 'bg-red-500' : 'bg-green-500' }}" style="width: {{ ($group->students->count() / $group->max_slots) * 100 }}%"></div>
-                                </div>
-                            </div>
-                            
-                            {{-- Tombol Hapus --}}
-                            <form action="{{ route('admin.groups.destroy', $group->id) }}" method="POST" onsubmit="return confirm('Hapus kelompok ini? Anggota akan dikeluarkan.');">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition border border-transparent hover:border-red-100" title="Hapus Kelompok">
-                                    <i class='bx bx-trash text-lg'></i>
-                                </button>
-                            </form>
-                        </div>
+    <div id="createGroupModal" class="fixed inset-0 z-50 hidden">
+        {{-- ... Isi Modal Create Group ... --}}
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('createGroupModal')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 fade-in">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Buat Kelompok Baru</h3>
+            <form action="{{ route('admin.groups.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="class_id" value="{{ $course->id }}">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Topik</label>
+                        <select name="topic_id" required class="w-full mt-1 p-2 rounded-xl border border-gray-300 text-sm">
+                            @foreach($topics as $topic)
+                                <option value="{{ $topic->id }}">{{ $topic->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
-
-                    {{-- Body Card (List Siswa) --}}
-                    <div class="p-5">
-                        @if($group->students->isEmpty())
-                            <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-lg bg-gray-50/30">
-                                <p class="text-xs text-gray-400 italic">Belum ada mahasiswa yang bergabung.</p>
-                            </div>
-                        @else
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                @foreach($group->students as $student)
-                                    <div class="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg shadow-sm hover:border-blue-200 transition group">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-100">
-                                                {{ substr($student->full_name, 0, 1) }}
-                                            </div>
-                                            <div class="overflow-hidden">
-                                                <p class="text-sm font-semibold text-gray-700 truncate max-w-[120px]">{{ $student->full_name }}</p>
-                                                <p class="text-[10px] text-gray-400">{{ $student->username }}</p>
-                                            </div>
-                                        </div>
-
-                                        {{-- Indikator Request Leave --}}
-                                        @if($student->pivot->is_requesting_group_leave)
-                                            <div class="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
-                                                <span class="text-[10px] text-orange-600 font-bold uppercase mr-1">Out?</span>
-                                                <form action="{{ route('admin.groups.leave.approve', [$course->id, $student->id]) }}" method="POST" class="inline">
-                                                    @csrf @method('PUT')
-                                                    <button class="text-green-600 hover:bg-green-100 p-0.5 rounded transition" title="Setujui"><i class='bx bx-check text-lg'></i></button>
-                                                </form>
-                                                <form action="{{ route('admin.groups.leave.reject', [$course->id, $student->id]) }}" method="POST" class="inline">
-                                                    @csrf @method('PUT')
-                                                    <button class="text-red-500 hover:bg-red-100 p-0.5 rounded transition" title="Tolak"><i class='bx bx-x text-lg'></i></button>
-                                                </form>
-                                            </div>
-                                        @else
-                                            <span class="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 font-medium">Aktif</span>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Nama Kelompok</label>
+                        <input type="text" name="name" required class="w-full mt-1 p-2 rounded-xl border border-gray-300 text-sm" placeholder="Kelompok 1">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Kapasitas</label>
+                        <input type="number" name="max_slots" value="5" min="1" required class="w-full mt-1 p-2 rounded-xl border border-gray-300 text-sm">
                     </div>
                 </div>
-            @empty
-                <div class="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm text-center">
-                    <div class="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                        <i class='bx bx-layer text-3xl text-gray-300'></i>
-                    </div>
-                    <p class="text-gray-600 font-medium">Belum ada kelompok</p>
-                    <p class="text-xs text-gray-400 mt-1 max-w-xs">Gunakan form di sebelah kiri untuk membuat kelompok baru.</p>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('createGroupModal')" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-indigo-600 rounded-xl hover:bg-indigo-700">Simpan</button>
                 </div>
-            @endforelse
+            </form>
+        </div>
+    </div>
+    
+    <div id="editGroupModal" class="fixed inset-0 z-50 hidden">
+        {{-- ... Isi Modal Edit Group ... --}}
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('editGroupModal')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 fade-in">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Kelompok</h3>
+            <form id="editGroupForm" method="POST">
+                @csrf @method('PUT')
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Nama Kelompok</label>
+                        <input type="text" name="name" id="edit_name" required class="w-full mt-1 p-2 rounded-xl border border-gray-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Kapasitas</label>
+                        <input type="number" name="max_slots" id="edit_slots" min="1" required class="w-full mt-1 p-2 rounded-xl border border-gray-300 text-sm">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('editGroupModal')" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-orange-500 rounded-xl hover:bg-orange-600">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addMemberModal" class="fixed inset-0 z-50 hidden">
+        {{-- ... Isi Modal Add Member ... --}}
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal('addMemberModal')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 fade-in">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Tambah Anggota</h3>
+            <p class="text-xs text-gray-500 mb-4">Menambahkan ke: <span id="addMemberGroupName" class="font-bold text-indigo-600"></span></p>
+            <form id="addMemberForm" method="POST">
+                @csrf
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pilih Mahasiswa</label>
+                    <select name="student_id" required class="w-full mt-1 p-2.5 rounded-xl border border-gray-300 text-sm bg-white">
+                        <option value="" disabled selected>-- Pilih Mahasiswa Tanpa Kelompok --</option>
+                        @foreach($ungroupedStudents as $student)
+                            <option value="{{ $student->id }}">{{ $student->full_name }}</option>
+                        @endforeach
+                    </select>
+                    @if($ungroupedStudents->isEmpty())
+                        <p class="text-xs text-red-500 mt-2">Tidak ada mahasiswa yang tersedia.</p>
+                    @endif
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('addMemberModal')" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 text-sm">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 text-sm">Tambahkan</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function editGroup(id, name, slots) {
+        openModal('editGroupModal');
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_slots').value = slots;
+        let url = "{{ route('admin.groups.update', ':id') }}"; 
+        document.getElementById('editGroupForm').action = url.replace(':id', id);
+    }
+    function addMember(groupId, groupName) {
+        openModal('addMemberModal');
+        document.getElementById('addMemberGroupName').innerText = groupName;
+        let url = "{{ route('admin.groups.members.store', ':id') }}";
+        document.getElementById('addMemberForm').action = url.replace(':id', groupId);
+    }
+
+    // REVISI: Fungsi Konfirmasi Hapus Kelompok
+    function deleteGroupConfirm(event) {
+        event.preventDefault();
+        var form = event.target;
+        Swal.fire({
+            title: 'Hapus Kelompok?',
+            text: "Semua anggota akan dikeluarkan otomatis.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    // REVISI: Fungsi Konfirmasi Keluarkan Member
+    function removeMemberConfirm(event, name) {
+        event.preventDefault();
+        var form = event.target;
+        Swal.fire({
+            title: 'Keluarkan Anggota?',
+            text: name + " akan dihapus dari kelompok ini.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Keluarkan!',
+            cancelButtonText: 'Batal',
+            width: '400px'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    // SweetAlert2 for Leave Requests (Tetap sama)
+    function showLeaveRequests() {
+        let htmlContent = `
+            <div class="flex flex-col gap-3 text-left">
+                @foreach($leavingStudents as $student)
+                <div class="flex flex-col sm:flex-row justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100 gap-3">
+                    <div class="text-sm">
+                        <p class="font-bold text-gray-800">{{ $student->full_name }}</p>
+                        <p class="text-xs text-red-500">
+                            Ingin keluar dari: <span class="font-bold">{{ $student->groups->where('class_id', $course->id)->first()->name ?? '-' }}</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <form action="{{ route('admin.groups.leave.approve', [$course->id, $student->id]) }}" method="POST">
+                            @csrf @method('PUT')
+                            <button type="submit" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors">Izinkan</button>
+                        </form>
+                        <form action="{{ route('admin.groups.leave.reject', [$course->id, $student->id]) }}" method="POST">
+                            @csrf @method('PUT')
+                            <button type="submit" class="px-3 py-1.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-300 transition-colors">Tolak</button>
+                        </form>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        `;
+        Swal.fire({
+            title: 'Permintaan Keluar Kelompok',
+            html: htmlContent,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: '550px',
+            customClass: { popup: 'rounded-2xl' }
+        });
+    }
+</script>
+@endpush
 @endsection

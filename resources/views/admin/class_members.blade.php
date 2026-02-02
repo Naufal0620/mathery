@@ -1,284 +1,215 @@
 @extends('layouts.admin')
 
 @section('title', 'Anggota Kelas - ' . $course->name)
+@section('header_title', 'Detail Kelas')
 
 @section('content')
-<div class="container-fluid px-4">
+<div class="fade-in space-y-6">
     
-    {{-- HEADER & TABS --}}
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">{{ $course->name }}</h1>
-                <p class="text-gray-500 text-sm mb-4">Kode Kelas: {{ $course->code }}</p>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{{ route('admin.classes') }}" class="hover:text-indigo-600 transition-colors">Manajemen Kelas</a>
+                <i class='bx bx-chevron-right'></i>
+                <span>Anggota</span>
             </div>
-            <a href="{{ route('admin.classes') }}" class="text-gray-500 hover:text-blue-600 text-sm font-medium transition flex items-center gap-1">
-                <i class='bx bx-arrow-back text-lg'></i> Kembali
-            </a>
+            <h2 class="text-2xl font-bold text-gray-800">{{ $course->name }}</h2>
+            <span class="inline-block bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-md font-semibold mt-1">
+                {{ $course->code }}
+            </span>
         </div>
+        
+        <div class="flex flex-wrap gap-3">
+            @if($pendingStudents->isNotEmpty())
+            <button onclick="showPendingRequests()" class="px-4 py-2 bg-orange-100 text-orange-600 text-sm font-bold rounded-xl border border-orange-200 hover:bg-orange-200 transition-all flex items-center gap-2 animate-pulse-slow">
+                <i class='bx bx-bell'></i>
+                <span>{{ $pendingStudents->count() }} Permintaan</span>
+            </button>
+            @endif
 
-        {{-- Tab Navigation --}}
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8">
-                <a href="{{ route('admin.classes.members', $course->id) }}" 
-                   class="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
-                   <i class='bx bx-group mr-2 text-lg'></i> Anggota Kelas
-                </a>
-
-                <a href="{{ route('admin.classes.groups', $course->id) }}" 
-                   class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
-                   <i class='bx bx-layer mr-2 text-lg'></i> Manajemen Kelompok
-                </a>
-            </nav>
+            <a href="{{ route('admin.classes.groups', $course->id) }}" class="px-4 py-2 bg-white text-indigo-600 text-sm font-medium rounded-xl border border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 transition-all flex items-center gap-2">
+                <i class='bx bx-group text-lg'></i> Kelola Kelompok
+            </a>
+            
+            <button onclick="openModal('addMemberModal')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                <i class='bx bx-user-plus text-lg'></i> Tambah Anggota
+            </button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {{-- KOLOM KIRI: FORM PENCARIAN & HASIL --}}
-        <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-6 overflow-hidden">
-                
-                <div class="p-5 border-b border-gray-100 bg-gray-50/50">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                        <i class='bx bx-user-plus text-blue-500 text-xl'></i> Tambah Mahasiswa
-                    </h3>
-                    <p class="text-xs text-gray-500 mt-1">Cari dan tambahkan mahasiswa ke kelas ini.</p>
-                </div>
-                
-                <div class="p-5">
-                    {{-- Form Pencarian --}}
-                    <form action="{{ route('admin.classes.members', $course->id) }}" method="GET" class="relative">
-                        <input type="text" name="search" value="{{ request('search') }}" autocomplete="off" placeholder="Nama atau NIM..." 
-                            class="w-full bg-white border border-gray-300 text-gray-700 rounded-lg pl-10 pr-8 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class='bx bx-search text-gray-400 text-lg'></i>
-                        </div>
-                        @if(request('search'))
-                            <a href="{{ route('admin.classes.members', $course->id) }}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 cursor-pointer">
-                                <i class='bx bx-x-circle text-lg'></i>
-                            </a>
-                        @endif
-                    </form>
-
-                    {{-- Hasil Pencarian --}}
-                    <div class="mt-4">
-                        @if(request('search'))
-                            <div class="flex justify-between items-end mb-2">
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hasil Pencarian</span>
-                            </div>
-
-                            <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                <div class="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                    @forelse($availableStudents as $student)
-                                        <div class="flex items-center justify-between p-3 border-b border-gray-100 last:border-0 hover:bg-blue-50 transition group">
-                                            <div class="flex items-center gap-3 overflow-hidden">
-                                                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-bold shrink-0">
-                                                    {{ substr($student->full_name, 0, 1) }}
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-gray-700 truncate group-hover:text-blue-700">{{ $student->full_name }}</p>
-                                                    <p class="text-[10px] text-gray-500 font-mono">{{ $student->username }}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <form action="{{ route('admin.classes.members.store', $course->id) }}" method="POST">
-                                                @csrf
-                                                <input type="hidden" name="user_id" value="{{ $student->id }}">
-                                                <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm" title="Tambahkan">
-                                                    <i class='bx bx-plus text-lg'></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @empty
-                                        <div class="p-6 text-center text-gray-400">
-                                            <i class='bx bx-search-alt text-3xl mb-2 opacity-50'></i>
-                                            <p class="text-xs">Tidak ditemukan.</p>
-                                        </div>
-                                    @endforelse
-                                </div>
-                            </div>
-                        @else
-                            {{-- State Kosong --}}
-                            <div class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
-                                <p class="text-xs text-gray-400">Silakan cari mahasiswa untuk ditambahkan.</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        <div class="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h3 class="font-bold text-gray-800 text-lg">Daftar Mahasiswa Aktif <span class="text-gray-400 font-normal text-sm">({{ $activeStudents->count() }})</span></h3>
+            
+            <div class="relative w-full sm:w-64">
+                <i class='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'></i>
+                <input type="text" id="tableSearch" placeholder="Cari nama atau NIM..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
             </div>
         </div>
 
-        {{-- KOLOM KANAN: LIST MAHASISWA --}}
-        <div class="lg:col-span-2 space-y-6">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50/50 text-gray-500 text-xs uppercase font-semibold tracking-wider">
+                    <tr>
+                        <th class="px-6 py-4">Mahasiswa</th>
+                        <th class="px-6 py-4 hidden md:table-cell">Email</th>
+                        <th class="px-6 py-4 hidden sm:table-cell">Tanggal Bergabung</th>
+                        <th class="px-6 py-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm" id="studentsTableBody">
+                    @forelse($activeStudents as $student)
+                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 p-[2px]">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($student->full_name) }}&background=random" class="w-full h-full rounded-full object-cover border-2 border-white">
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">{{ $student->full_name }}</p>
+                                    <p class="text-xs text-gray-500 font-mono">{{ $student->username }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 hidden md:table-cell text-gray-600">
+                            {{ $student->email }}
+                        </td>
+                        <td class="px-6 py-4 hidden sm:table-cell text-gray-500">
+                            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                                <i class='bx bx-calendar'></i>
+                                {{ $student->pivot->created_at ? $student->pivot->created_at->format('d M Y') : '-' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {{-- REVISI: Menggunakan SweetAlert2 untuk konfirmasi delete --}}
+                            <form action="{{ route('admin.classes.members.destroy', [$course->id, $student->id]) }}" method="POST" onsubmit="return deleteConfirm(event)">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50" title="Keluarkan">
+                                    <i class='bx bx-trash text-lg'></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-gray-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <i class='bx bx-user-x bx-lg text-gray-300'></i>
+                                <p>Belum ada mahasiswa aktif di kelas ini.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-            {{-- TABEL 1: PERMINTAAN PENDING --}}
-            @if($pendingStudents->count() > 0)
-            <div class="bg-orange-50 rounded-xl border border-orange-200 shadow-sm overflow-hidden animate-fade-in-down">
-                <div class="px-5 py-3 border-b border-orange-200 flex items-center justify-between bg-orange-100/50">
-                    <h3 class="text-sm font-bold text-orange-800 flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
-                        Menunggu Persetujuan
-                        <span class="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full">{{ $pendingStudents->count() }}</span>
-                    </h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <tbody class="divide-y divide-orange-200/50">
-                            @foreach($pendingStudents as $student)
-                            <tr class="hover:bg-orange-100/40 transition">
-                                <td class="p-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center font-bold text-sm shadow-sm border-2 border-white">
-                                            {{ substr($student->full_name, 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <p class="font-bold text-gray-800 text-sm">{{ $student->full_name }}</p>
-                                            <p class="text-xs text-gray-500 font-mono">{{ $student->username }} &bull; {{ $student->pivot->created_at->diffForHumans() }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="p-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <form action="{{ route('admin.classes.members.approve', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST">
-                                            @csrf @method('PUT')
-                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-lg shadow-sm flex items-center justify-center transition" title="Terima">
-                                                <i class='bx bx-check text-lg'></i>
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('admin.classes.members.destroy', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST" onsubmit="return confirm('Tolak permintaan ini?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="bg-white border border-red-200 text-red-500 hover:bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center transition" title="Tolak">
-                                                <i class='bx bx-x text-lg'></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
+    <div id="addMemberModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeModal('addMemberModal')"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 fade-in">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-xl font-bold text-gray-800">Tambah Anggota Manual</h3>
+                <button onclick="closeModal('addMemberModal')" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class='bx bx-x bx-md'></i>
+                </button>
+            </div>
+            <form action="{{ route('admin.classes.members.store', $course->id) }}" method="POST">
+                @csrf
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Mahasiswa</label>
+                    <div class="relative">
+                        <i class='bx bx-search absolute left-3 top-3 text-gray-400'></i>
+                        <select name="user_id" required class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm appearance-none bg-white">
+                            <option value="" disabled selected>-- Pilih atau Cari Nama --</option>
+                            @foreach($availableStudents as $student)
+                                <option value="{{ $student->id }}">{{ $student->full_name }} ({{ $student->username }})</option>
                             @endforeach
-                        </tbody>
-                    </table>
+                        </select>
+                        <i class='bx bx-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none'></i>
+                    </div>
                 </div>
-            </div>
-            @endif
-
-            {{-- TABEL 2: ANGGOTA AKTIF --}}
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
-                    <h3 class="font-bold text-gray-800">Daftar Mahasiswa Aktif</h3>
-                    <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-semibold border border-gray-200">
-                        Total: {{ $activeStudents->count() }}
-                    </span>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal('addMemberModal')" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Tambahkan</button>
                 </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wide">
-                                <th class="px-6 py-3">Mahasiswa</th>
-                                <th class="px-6 py-3">Status</th>
-                                <th class="px-6 py-3 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @forelse($activeStudents as $student)
-                            <tr class="hover:bg-gray-50 transition group">
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
-                                            {{ substr($student->full_name, 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <p class="font-medium text-gray-800 text-sm">{{ $student->full_name }}</p>
-                                            <p class="text-[11px] text-gray-400 font-mono">{{ $student->username }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    @if($student->pivot->group_id)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                                            Punya Kelompok
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                            Tanpa Kelompok
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button onclick="confirmRemove('{{ $student->id }}', '{{ $student->full_name }}')" 
-                                        class="text-gray-400 hover:text-red-600 p-1.5 rounded-full hover:bg-red-50 transition" title="Keluarkan dari Kelas">
-                                        <i class='bx bx-trash text-lg'></i>
-                                    </button>
-                                    <form id="remove-form-{{ $student->id }}" action="{{ route('admin.classes.members.destroy', ['id' => $course->id, 'student_id' => $student->id]) }}" method="POST" class="hidden">
-                                        @csrf @method('DELETE')
-                                    </form>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="3" class="px-6 py-12 text-center">
-                                    <div class="flex flex-col items-center justify-center text-gray-400">
-                                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                            <i class='bx bx-user-x text-2xl opacity-50'></i>
-                                        </div>
-                                        <p class="text-sm font-medium">Belum ada mahasiswa aktif.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
+            </form>
         </div>
     </div>
 </div>
 
-{{-- CSS Custom Scrollbar untuk Hasil Pencarian --}}
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #d1d5db; 
-        border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af; 
-    }
-</style>
-
 @push('scripts')
 <script>
-    function confirmRemove(studentId, studentName) {
-        // Cek apakah SweetAlert (Swal) tersedia
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: 'Keluarkan Mahasiswa?',
-                html: "Anda akan mengeluarkan <b>" + studentName + "</b> dari kelas ini.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#9ca3af',
-                confirmButtonText: 'Ya, Keluarkan',
-                cancelButtonText: 'Batal',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('remove-form-' + studentId).submit();
-                }
-            })
-        } else {
-            // Fallback jika SweetAlert tidak ada
-            if(confirm("Apakah Anda yakin ingin mengeluarkan " + studentName + " dari kelas ini?")) {
-                document.getElementById('remove-form-' + studentId).submit();
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    document.getElementById('tableSearch').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#studentsTableBody tr');
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    // REVISI: Fungsi Delete Confirm SweetAlert2
+    function deleteConfirm(event) {
+        event.preventDefault(); // Mencegah form submit langsung
+        var form = event.target; // Ambil elemen form yang di-submit
+
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Mahasiswa akan dikeluarkan dari kelas ini.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Keluarkan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit(); // Submit form manual jika user klik 'Ya'
             }
-        }
+        });
+    }
+
+    // Fungsi Show Pending Requests (Sama seperti sebelumnya)
+    function showPendingRequests() {
+        let htmlContent = `
+            <div class="flex flex-col gap-3 text-left">
+                @foreach($pendingStudents as $student)
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($student->full_name) }}&background=random" class="w-8 h-8 rounded-full">
+                        <div class="text-sm">
+                            <p class="font-bold text-gray-800">{{ $student->full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ $student->username }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <form action="{{ route('admin.classes.members.approve', [$course->id, $student->id]) }}" method="POST">
+                            @csrf @method('PUT')
+                            <button type="submit" class="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors">Terima</button>
+                        </form>
+                        <form action="{{ route('admin.classes.members.destroy', [$course->id, $student->id]) }}" method="POST">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="px-3 py-1.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-300 transition-colors">Tolak</button>
+                        </form>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        `;
+        Swal.fire({
+            title: 'Permintaan Bergabung',
+            html: htmlContent,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: '500px',
+            customClass: { popup: 'rounded-2xl' }
+        });
     }
 </script>
 @endpush

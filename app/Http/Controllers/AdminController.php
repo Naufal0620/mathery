@@ -124,6 +124,215 @@ class AdminController extends Controller
         return redirect()->route('admin.classes')->with('success', 'Informasi kelas diperbarui!');
     }
 
+    public function classMembers(Request $request, $id)
+    {
+        $course = Course::findOrFail($id);
+
+        // Ambil siswa aktif
+        $activeStudents = $course->students()
+            ->wherePivot('status', 'accepted')
+            ->orderBy('full_name', 'asc')
+            ->get();
+
+        // Ambil siswa pending
+        $pendingStudents = $course->students()
+            ->wherePivot('status', 'pending')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Logika untuk dropdown "Tambah Anggota Manual"
+        // Mengambil student yang belum masuk kelas ini
+        $existingIds = $course->students()->pluck('users.id')->toArray();
+        
+        $query = User::where('role', 'student')->whereNotIn('id', $existingIds);
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
+        $availableStudents = $query->limit(20)->get();
+
+        return view('admin.class_members', compact('course', 'activeStudents', 'pendingStudents', 'availableStudents'));
+    }
+
+    public function storeClassMember(Request $request, $id)
+    {
+        $request->validate(['user_id' => 'required|exists:users,id']);
+        $course = Course::findOrFail($id);
+
+        // Menambahkan siswa dengan status langsung diterima
+        $course->students()->attach($request->user_id, ['status' => 'accepted']);
+
+        return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan.');
+    }
+
+    public function approveMember($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        $course->students()->updateExistingPivot($student_id, ['status' => 'accepted']);
+
+        return redirect()->back()->with('success', 'Mahasiswa resmi bergabung di kelas.');
+    }
+
+    public function destroyClassMember($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        $course->students()->detach($student_id);
+
+        return redirect()->back()->with('success', 'Mahasiswa dihapus dari kelas.');
+    }
+
+    public function classGroups($id)
+    {
+        $course = Course::findOrFail($id);
+        
+        // 1. Ambil Groups dengan Eager Loading
+        $groups = $course->groups()
+            ->with(['topic', 'students'])
+            ->get(); // Tanpa filter topik spesifik (tampilkan semua)
+
+        // 2. Ambil Topik untuk dropdown 'Buat Kelompok'
+        $topics = $course->topics()->orderBy('meeting_date', 'asc')->get();
+
+        // 3. Ambil Mahasiswa yang BELUM punya kelompok di kelas ini
+        // Asumsi: Di tabel pivot 'class_members', kolom 'group_id' bernilai NULL
+        $ungroupedStudents = $course->students()
+            ->wherePivot('status', 'accepted')
+            ->wherePivot('group_id', null)
+            ->orderBy('full_name', 'asc')
+            ->get();
+
+        // 4. Ambil Request Keluar (Fitur sebelumnya)
+        $leavingStudents = $course->students()
+            ->wherePivot('is_requesting_group_leave', true)
+            ->with(['groups' => function($q) use ($id) {
+                $q->where('class_id', $id);
+            }])
+            ->get();
+
+        return view('admin.class_groups', compact('course', 'groups', 'topics', 'ungroupedStudents', 'leavingStudents'));
+    }
+
+    public function updateGroup(Request $request, $id)
+    {
+        $request->validate([
+            'name'      => 'required|string|max:100',
+            'max_slots' => 'required|integer|min:1',
+        ]);
+
+        $group = Group::findOrFail($id);
+        $group->update([
+            'name'      => $request->name,
+            'max_slots' => $request->max_slots,
+        ]);
+
+        return redirect()->back()->with('success', 'Informasi kelompok diperbarui.');
+    }
+
+    // Fitur Tambah Anggota Manual ke Kelompok
+    public function storeGroupMember(Request $request, $group_id)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:users,id',
+        ]);
+
+        $group = Group::findOrFail($group_id);
+        
+        // PERBAIKAN: Menggunakan 'course' sesuai nama fungsi di Model Group, bukan 'class'
+        $course = $group->course; 
+
+        // Cek apakah slot penuh
+        if ($group->students()->count() >= $group->max_slots) {
+            return redirect()->back()->with('error', 'Gagal! Kuota kelompok sudah penuh.');
+        }
+
+        // Update pivot table (class_members): Set group_id ke ID kelompok ini
+        // Pastikan student tersebut memang anggota kelas ini (validasi tambahan opsional tapi disarankan)
+        $course->students()->updateExistingPivot($request->student_id, [
+            'group_id' => $group_id
+        ]);
+
+        return redirect()->back()->with('success', 'Anggota berhasil ditambahkan ke kelompok.');
+    }
+
+    // Fitur Hapus Anggota dari Kelompok (Kick)
+    public function removeGroupMember($group_id, $student_id)
+    {
+        $group = Group::findOrFail($group_id);
+        
+        // PERBAIKAN: Menggunakan 'course' sesuai nama fungsi di Model Group
+        $course = $group->course; 
+
+        // Set group_id jadi NULL
+        $course->students()->updateExistingPivot($student_id, [
+            'group_id' => null,
+            'is_requesting_group_leave' => false // Reset flag request juga jika ada
+        ]);
+
+        return redirect()->back()->with('success', 'Anggota dikeluarkan dari kelompok.');
+    }
+
+    public function storeGroup(Request $request)
+    {
+        $request->validate([
+            'class_id'  => 'required|exists:classes,id',
+            'topic_id'  => 'required|exists:topics,id',
+            'name'      => 'required|string|max:100',
+            'max_slots' => 'required|integer|min:1',
+        ]);
+
+        Group::create([
+            'class_id'  => $request->class_id,
+            'topic_id'  => $request->topic_id,
+            'name'      => $request->name,
+            'max_slots' => $request->max_slots,
+        ]);
+
+        return redirect()->back()->with('success', 'Kelompok berhasil dibuat.');
+    }
+
+    public function approveGroupLeave($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        // Update pivot class_members: set group_id jadi NULL dan reset flag request
+        $course->students()->updateExistingPivot($student_id, [
+            'group_id' => null,
+            'is_requesting_group_leave' => false
+        ]);
+
+        return redirect()->back()->with('success', 'Mahasiswa diizinkan keluar dari kelompok.');
+    }
+
+    // 3. Menolak Permintaan Keluar
+    public function rejectGroupLeave($class_id, $student_id)
+    {
+        $course = Course::findOrFail($class_id);
+        
+        // Hanya reset flag request, group_id tetap
+        $course->students()->updateExistingPivot($student_id, [
+            'is_requesting_group_leave' => false
+        ]);
+
+        return redirect()->back()->with('success', 'Permintaan keluar ditolak.');
+    }
+
+    // 4. Menghapus Kelompok
+    public function destroyGroup($id)
+    {
+        $group = Group::findOrFail($id);
+        
+        // Otomatis foreign key di class_members akan jadi NULL (karena onDelete set null di migration)
+        $group->delete(); 
+
+        return redirect()->back()->with('success', 'Kelompok berhasil dihapus.');
+    }
+
     public function syllabus(Request $request)
     {
         // Ambil data kelas untuk dropdown filter dan modal tambah
@@ -375,141 +584,6 @@ class AdminController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'Mahasiswa berhasil dihapus.');
-    }
-
-    public function classMembers(Request $request, $id)
-    {
-        $course = Course::findOrFail($id);
-
-        // 1. Ambil Anggota Aktif (Accepted)
-        $activeStudents = $course->students()
-            ->wherePivot('status', 'accepted') // Filter Pivot
-            ->orderBy('full_name', 'asc')
-            ->get();
-
-        // 2. Ambil Permintaan Pending (Pending)
-        $pendingStudents = $course->students()
-            ->wherePivot('status', 'pending') // Filter Pivot
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // 3. Logic untuk Dropdown Tambah Manual (Hanya user yang BELUM ada di tabel pivot sama sekali)
-        $existingIds = $course->students()->pluck('users.id')->toArray();
-        
-        $query = User::where('role', 'student')->whereNotIn('id', $existingIds);
-        
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('full_name', 'like', "%{$search}%")
-                ->orWhere('username', 'like', "%{$search}%");
-            });
-        }
-
-        $availableStudents = $query->limit(20)->get();
-
-        return view('admin.class_members', compact('course', 'activeStudents', 'pendingStudents', 'availableStudents'));
-    }
-
-    // Fitur Tambah Manual oleh Admin (Langsung Accepted)
-    public function storeClassMember(Request $request, $id)
-    {
-        $request->validate(['user_id' => 'required|exists:users,id']);
-        $course = Course::findOrFail($id);
-
-        // Admin nambahin = Langsung Accepted
-        $course->students()->attach($request->user_id, ['status' => 'accepted']);
-
-        return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan secara manual.');
-    }
-
-    // Fitur Approve (Terima Mahasiswa)
-    public function approveMember($class_id, $student_id)
-    {
-        $course = Course::findOrFail($class_id);
-        
-        // Update status di pivot table jadi 'accepted'
-        $course->students()->updateExistingPivot($student_id, ['status' => 'accepted']);
-
-        return redirect()->back()->with('success', 'Permintaan bergabung disetujui!');
-    }
-
-    // Fitur Reject (Tolak Mahasiswa) - Sama dengan delete/remove
-    public function destroyClassMember($class_id, $student_id)
-    {
-        $course = Course::findOrFail($class_id);
-        $course->students()->detach($student_id);
-
-        return redirect()->back()->with('success', 'Mahasiswa dihapus/ditolak dari kelas.');
-    }
-
-    public function classGroups($id)
-    {
-        $course = Course::findOrFail($id);
-        
-        // Ambil groups beserta relasi topiknya dan siswanya
-        // Kita juga butuh list topics untuk dropdown saat buat kelompok baru
-        $groups = $course->groups()->with(['topic', 'students'])->get();
-        $topics = $course->topics()->orderBy('meeting_date', 'asc')->get();
-
-        return view('admin.class_groups', compact('course', 'groups', 'topics'));
-    }
-
-    public function storeGroup(Request $request)
-    {
-        $request->validate([
-            'class_id'  => 'required|exists:classes,id',
-            'topic_id'  => 'required|exists:topics,id', // Wajib pilih topik
-            'name'      => 'required|string|max:100',
-            'max_slots' => 'required|integer|min:1',
-        ]);
-
-        Group::create([
-            'class_id'  => $request->class_id,
-            'topic_id'  => $request->topic_id,
-            'name'      => $request->name,
-            'max_slots' => $request->max_slots,
-        ]);
-
-        return redirect()->back()->with('success', 'Kelompok berhasil dibuat untuk topik tersebut.');
-    }
-
-    // 2. Menyetujui Permintaan Keluar Kelompok
-    public function approveGroupLeave($class_id, $student_id)
-    {
-        $course = Course::findOrFail($class_id);
-        
-        // Update pivot class_members: set group_id jadi NULL dan reset flag request
-        $course->students()->updateExistingPivot($student_id, [
-            'group_id' => null,
-            'is_requesting_group_leave' => false
-        ]);
-
-        return redirect()->back()->with('success', 'Mahasiswa diizinkan keluar dari kelompok.');
-    }
-
-    // 3. Menolak Permintaan Keluar
-    public function rejectGroupLeave($class_id, $student_id)
-    {
-        $course = Course::findOrFail($class_id);
-        
-        // Hanya reset flag request, group_id tetap
-        $course->students()->updateExistingPivot($student_id, [
-            'is_requesting_group_leave' => false
-        ]);
-
-        return redirect()->back()->with('success', 'Permintaan keluar ditolak.');
-    }
-
-    // 4. Menghapus Kelompok
-    public function destroyGroup($id)
-    {
-        $group = Group::findOrFail($id);
-        
-        // Otomatis foreign key di class_members akan jadi NULL (karena onDelete set null di migration)
-        $group->delete(); 
-
-        return redirect()->back()->with('success', 'Kelompok berhasil dihapus.');
     }
 
     public function projectsIndex(Request $request)
