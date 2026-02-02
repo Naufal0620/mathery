@@ -335,70 +335,64 @@ class AdminController extends Controller
 
     public function syllabus(Request $request)
     {
-        // Ambil data kelas untuk dropdown filter dan modal tambah
-        $courses = Course::where('is_active', true)->get();
+        // Ambil semua kelas untuk dropdown filter
+        $courses = Course::orderBy('name', 'asc')->get();
+        
+        $selectedCourse = null;
+        $topics = collect(); // Default: Collection kosong (Rule: Jangan tampilkan apapun jika belum pilih kelas)
 
-        // Query Dasar
-        $query = Topic::with('course')->orderBy('class_id', 'asc')->orderBy('meeting_date', 'asc');
+        // Logika Filter: Hanya ambil data jika ada request filter_class
+        if ($request->filled('filter_class')) {
+            $classId = $request->filter_class;
+            $selectedCourse = Course::find($classId);
+            
+            if ($selectedCourse) {
+                // Ambil topik berdasarkan kelas, urutkan dari tanggal pertemuan terlama (awal) ke terbaru
+                $topics = Topic::where('class_id', $classId)
+                    ->orderBy('meeting_date', 'asc')
+                    ->get();
+            }
+        } 
+        // Note: Tidak ada blok 'else' untuk memuat data default.
 
-        // Cek apakah ada filter kelas yang dipilih
-        if ($request->has('filter_class') && $request->filter_class != '') {
-            $query->where('class_id', $request->filter_class);
-        }
-
-        $topics = $query->get();
-
-        return view('admin.syllabus', compact('topics', 'courses'));
+        return view('admin.syllabus', compact('courses', 'selectedCourse', 'topics'));
     }
 
     public function storeTopic(Request $request)
     {
         $request->validate([
             'class_id'     => 'required|exists:classes,id',
-            'name'         => 'required|string|max:100',
+            'name'         => 'required|string|max:150',
             'meeting_date' => 'required|date',
             'description'  => 'nullable|string',
         ]);
 
-        // Buat Slug otomatis (Contoh: "pertemuan-1-kalkulus")
-        // Menggunakan helper Str::slug()
-        $slugRaw = $request->name . '-' . time(); // Tambah time agar unik
-        $slug = Str::slug($slugRaw);
-
         Topic::create([
             'class_id'     => $request->class_id,
             'name'         => $request->name,
-            'slug'         => $slug,
             'meeting_date' => $request->meeting_date,
             'description'  => $request->description,
         ]);
 
-        return redirect()->route('admin.syllabus')->with('success', 'Topik pertemuan berhasil ditambahkan!');
+        return redirect()->back()->with('success', 'Topik pertemuan berhasil ditambahkan.');
     }
 
     public function updateTopic(Request $request, $id)
     {
         $request->validate([
-            'class_id'     => 'required|exists:classes,id',
-            'name'         => 'required|string|max:100',
+            'name'         => 'required|string|max:150',
             'meeting_date' => 'required|date',
             'description'  => 'nullable|string',
         ]);
 
         $topic = Topic::findOrFail($id);
-        
-        // Update slug jika nama berubah (opsional, tapi disarankan agar konsisten)
-        $slug = Str::slug($request->name . '-' . $topic->id);
-
         $topic->update([
-            'class_id'     => $request->class_id,
             'name'         => $request->name,
-            'slug'         => $slug,
             'meeting_date' => $request->meeting_date,
             'description'  => $request->description,
         ]);
 
-        return redirect()->route('admin.syllabus')->with('success', 'Topik pertemuan berhasil diperbarui!');
+        return redirect()->back()->with('success', 'Informasi topik diperbarui.');
     }
 
     public function destroyTopic($id)
@@ -406,7 +400,7 @@ class AdminController extends Controller
         $topic = Topic::findOrFail($id);
         $topic->delete();
 
-        return redirect()->back()->with('success', 'Topik berhasil dihapus.');
+        return redirect()->back()->with('success', 'Topik pertemuan dihapus.');
     }
 
     public function materialsIndex(Request $request)

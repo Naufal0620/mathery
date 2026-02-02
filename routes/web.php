@@ -60,10 +60,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/groups/{id}/members', [AdminController::class, 'storeGroupMember'])->name('groups.members.store');
             Route::delete('/groups/{group_id}/members/{student_id}', [AdminController::class, 'removeGroupMember'])->name('groups.members.destroy');
             
-            Route::get('/syllabus', 'syllabus')->name('syllabus');
-            Route::post('/syllabus', 'storeTopic')->name('syllabus.store');
-            Route::put('/syllabus/{id}', 'updateTopic')->name('syllabus.update');
-            Route::delete('/syllabus/{id}', 'destroyTopic')->name('syllabus.destroy');
+            Route::get('/syllabus', [AdminController::class, 'syllabus'])->name('syllabus');
+            Route::post('/syllabus', [AdminController::class, 'storeTopic'])->name('syllabus.store');
+            Route::put('/syllabus/{id}', [AdminController::class, 'updateTopic'])->name('syllabus.update');
+            Route::delete('/syllabus/{id}', [AdminController::class, 'destroyTopic'])->name('syllabus.destroy');
 
             Route::get('/materials', [AdminController::class, 'materialsIndex'])->name('materials.index');
             Route::post('/materials', [AdminController::class, 'storeMaterial'])->name('materials.store');
