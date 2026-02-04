@@ -120,7 +120,7 @@
                     Sudah menyelesaikan tugas akhir/projek kelompok? Kumpulkan hasil karya Anda di sini.
                 </p>
 
-                <a href="{{ route('student.project.create', $course->id) }}" class="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-center rounded-lg font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 relative z-10">
+                <a href="{{ route('student.projects.store', $course->id) }}" class="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-center rounded-lg font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 relative z-10">
                     <i class='bx bx-upload mr-1'></i> Upload Projek
                 </a>
             </div>
