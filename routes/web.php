@@ -93,7 +93,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/projects/{id}', [AdminController::class, 'destroyProject'])->name('projects.destroy');
             Route::put('/projects/{id}/feature', [AdminController::class, 'toggleFeaturedProject'])->name('projects.feature');
             
-            Route::get('/activity', 'activity')->name('activity');
+            Route::get('/activity', [AdminController::class, 'activity'])->name('activity');
         });
     });
 

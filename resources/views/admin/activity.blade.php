@@ -1,94 +1,105 @@
 @extends('layouts.admin')
 
 @section('title', 'Riwayat Aktivitas - Mathery')
-@section('header_title', 'Riwayat Aktivitas Sistem')
+@section('header_title', 'Log Aktivitas')
 
 @section('content')
-<div class="fade-in">
-    <!-- Filter Bar -->
-    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <div class="relative w-full sm:w-64">
-            <input type="text" placeholder="Cari aktivitas..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            <i class='bx bx-search absolute left-3 top-2.5 text-gray-400'></i>
+<div class="fade-in space-y-6">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800 mb-1">Jejak Aktivitas</h2>
+            <p class="text-sm text-gray-500">Memantau kegiatan terbaru yang terjadi di seluruh platform.</p>
         </div>
-        <div class="flex gap-2">
-            <select class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none">
-                <option>Semua Kelas</option>
-                <option>Kalkulus A</option>
-                <option>Aljabar B</option>
-            </select>
-            <button class="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-                <i class='bx bx-filter-alt'></i> Filter
-            </button>
+        
+        <div class="flex gap-4">
+            <div class="text-right">
+                <span class="block text-2xl font-bold text-indigo-600">{{ $activities->total() }}</span>
+                <span class="text-xs text-gray-400 uppercase font-medium">Log Tersimpan</span>
+            </div>
         </div>
     </div>
 
-    <!-- Full Table -->
-    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-gray-800">Log Aktivitas Sistem</h3>
-            <button class="text-sm text-gray-500 hover:text-indigo-600"><i class='bx bx-export mr-1'></i> Export CSV</button>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left min-w-[700px]">
-                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold tracking-wider">
-                    <tr>
-                        <th class="px-6 py-4">User</th>
-                        <th class="px-6 py-4">Aksi</th>
-                        <th class="px-6 py-4">Detail</th>
-                        <th class="px-6 py-4">Kelas</th>
-                        <th class="px-6 py-4">Waktu</th>
-                        <th class="px-6 py-4">IP Address</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
-                    <!-- Row 1 -->
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name=Naufal&background=random" class="w-8 h-8 rounded-full">
-                                <div>
-                                    <p class="font-bold text-gray-800">Naufal</p>
-                                    <p class="text-xs text-gray-500">Mahasiswa</p>
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8 relative min-h-[400px]">
+        
+        @if($activities->isNotEmpty())
+            <div class="absolute left-8 md:left-12 top-8 bottom-8 w-0.5 bg-gray-100"></div>
+
+            <div class="space-y-8 relative">
+                @php 
+                    $lastDate = null; 
+                @endphp
+
+                @foreach($activities as $log)
+                    @php
+                        $currentDate = $log['created_at']->format('Y-m-d');
+                        $isToday = $log['created_at']->isToday();
+                        $isYesterday = $log['created_at']->isYesterday();
+                        
+                        // Label Tanggal
+                        if ($isToday) $dateLabel = "Hari Ini";
+                        elseif ($isYesterday) $dateLabel = "Kemarin";
+                        else $dateLabel = $log['created_at']->isoFormat('dddd, D MMMM Y');
+                    @endphp
+
+                    {{-- Group Header: Muncul setiap ganti tanggal --}}
+                    @if($lastDate !== $currentDate)
+                        <div class="relative pl-12 md:pl-16">
+                            <span class="inline-block py-1 px-3 rounded-full bg-gray-100 text-gray-600 text-xs font-bold border border-gray-200 shadow-sm">
+                                {{ $dateLabel }}
+                            </span>
+                        </div>
+                        @php $lastDate = $currentDate; @endphp
+                    @endif
+
+                    {{-- Activity Item --}}
+                    <div class="relative pl-12 md:pl-16 group">
+                        
+                        <div class="absolute left-0 top-1 w-10 h-10 rounded-full {{ $log['color'] }} flex items-center justify-center border-4 border-white shadow-sm z-10">
+                            <i class='bx {{ $log['icon'] }} text-lg'></i>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:border-indigo-100 hover:shadow-md transition-all duration-300">
+                            
+                            <div class="mb-2 sm:mb-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-sm font-bold text-gray-800">{{ $log['user_name'] }}</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase {{ $log['user_role'] == 'Teacher' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700' }}">
+                                        {{ $log['user_role'] }}
+                                    </span>
+                                    <span class="text-xs text-gray-400">• {{ $log['created_at']->format('H:i') }} WIB</span>
                                 </div>
+                                
+                                <p class="text-sm text-gray-600">
+                                    <span class="font-semibold text-gray-700">{{ $log['action'] }}:</span> 
+                                    {{ $log['title'] }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-0.5">{{ $log['description'] }}</p>
                             </div>
-                        </td>
-                        <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Upload</span></td>
-                        <td class="px-6 py-4 text-gray-600">Mengupload file <span class="font-medium text-gray-800">Laporan_Akhir.pdf</span></td>
-                        <td class="px-6 py-4"><span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs">Kalkulus A</span></td>
-                        <td class="px-6 py-4 text-gray-500">2 menit lalu</td>
-                        <td class="px-6 py-4 text-xs text-gray-400 font-mono">192.168.1.10</td>
-                    </tr>
-                    <!-- Row 2 -->
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name=Siti&background=random" class="w-8 h-8 rounded-full">
-                                <div>
-                                    <p class="font-bold text-gray-800">Siti Aminah</p>
-                                    <p class="text-xs text-gray-500">Mahasiswa</p>
-                                </div>
+
+                            <div>
+                                <a href="{{ $log['link'] }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm">
+                                    Lihat Detail <i class='bx bx-right-arrow-alt'></i>
+                                </a>
                             </div>
-                        </td>
-                        <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Join</span></td>
-                        <td class="px-6 py-4 text-gray-600">Bergabung menggunakan kode kelas</td>
-                        <td class="px-6 py-4"><span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs">Aljabar B</span></td>
-                        <td class="px-6 py-4 text-gray-500">15 menit lalu</td>
-                        <td class="px-6 py-4 text-xs text-gray-400 font-mono">10.0.0.52</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
-            <p class="text-xs text-gray-500">Menampilkan 1-4 dari 124 log</p>
-            <div class="flex gap-2">
-                <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-xs">Prev</button>
-                <button class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">1</button>
-                <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-xs">2</button>
-                <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-xs">Next</button>
+                        </div>
+                    </div>
+                @endforeach
             </div>
-        </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-100">
+                {{ $activities->links() }}
+            </div>
+
+        @else
+            <div class="flex flex-col items-center justify-center py-20 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <i class='bx bx-time-five text-3xl text-gray-400'></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">Belum Ada Aktivitas</h3>
+                <p class="text-gray-500">Aktivitas sistem akan muncul di sini.</p>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

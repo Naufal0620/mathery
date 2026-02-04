@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -674,8 +675,82 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Akun mahasiswa dihapus.');
     }
 
-    public function activity()
+    public function activity(Request $request)
     {
-        return view('admin.activity');
+        // 1. Ambil Data Materi Terbaru
+        $materials = Material::with(['author', 'topic.course'])
+            ->latest()
+            ->take(50)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'type' => 'material',
+                    'action' => 'Mengupload Materi',
+                    'title' => $item->title,
+                    'description' => 'pada kelas ' . ($item->topic->course->name ?? 'Mata Kuliah Dihapus'),
+                    'user_name' => $item->author->full_name ?? 'Admin',
+                    'user_role' => 'Teacher', // Asumsi uploader adalah pengajar/admin
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-file-plus',
+                    'color' => 'bg-blue-100 text-blue-600',
+                    'link' => route('admin.materials.index', ['filter_class' => $item->topic->course->id ?? null]),
+                ];
+            });
+
+        // 2. Ambil Data Projek Terbaru
+        $projects = StudentProject::with(['student', 'course'])
+            ->latest()
+            ->take(50)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'type' => 'project',
+                    'action' => 'Mengumpulkan Tugas',
+                    'title' => $item->title,
+                    'description' => 'di kelas ' . ($item->course->name ?? 'Mata Kuliah Dihapus'),
+                    'user_name' => $item->student->full_name ?? 'Mahasiswa',
+                    'user_role' => 'Student',
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-folder',
+                    'color' => 'bg-purple-100 text-purple-600',
+                    'link' => route('admin.projects.index', ['filter_class' => $item->class_id]),
+                ];
+            });
+
+        // 3. Ambil User Baru (Student)
+        $newUsers = User::where('role', 'student')
+            ->latest()
+            ->take(50)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'type' => 'user',
+                    'action' => 'Bergabung',
+                    'title' => 'Mahasiswa Baru',
+                    'description' => 'Telah mendaftar ke dalam sistem.',
+                    'user_name' => $item->full_name,
+                    'user_role' => 'Student',
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-user-plus',
+                    'color' => 'bg-green-100 text-green-600',
+                    'link' => route('admin.users', ['search' => $item->username]),
+                ];
+            });
+
+        // 4. Merge & Sort Semua Data
+        $allActivities = $materials->merge($projects)->merge($newUsers)->sortByDesc('created_at');
+
+        // 5. Manual Pagination
+        $perPage = 15;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $currentItems = $allActivities->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        
+        $activities = new LengthAwarePaginator($currentItems, count($allActivities), $perPage);
+        $activities->setPath($request->url());
+
+        return view('admin.activity', compact('activities'));
     }
 }
