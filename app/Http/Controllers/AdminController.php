@@ -19,7 +19,7 @@ class AdminController extends Controller
 {
     public function index()
     {
-        // 1. Mengambil Statistik Real-time
+        // 1. Statistik Real-time (Tetap)
         $stats = [
             'students' => User::where('role', 'student')->count(),
             'projects' => StudentProject::count(),
@@ -27,45 +27,75 @@ class AdminController extends Controller
             'topics'   => Topic::count(),
         ];
 
-        // 2. Mengambil "Aktivitas Terbaru" (Gabungan Materi & Projek)
-        // Kita ambil 5 Materi terbaru
-        $latestMaterials = Material::with(['author', 'topic.course'])
+        // 2. Logika "Aktivitas Terbaru" (Disamakan dengan method activity)
+        
+        // Ambil 5 Materi Terbaru
+        $materials = Material::with(['author', 'topic.course'])
             ->latest()
             ->take(5)
             ->get()
             ->map(function ($item) {
                 return [
+                    'id' => $item->id,
                     'type' => 'material',
-                    'actor' => $item->author->full_name ?? 'Admin',
-                    'action' => 'Mengupload Materi: ' . Str::limit($item->title, 20),
-                    'class' => $item->topic->course->name ?? '-',
-                    'time' => $item->created_at,
-                    'icon' => 'bx-upload',
-                    'color' => 'text-blue-500',
+                    'action' => 'Mengupload Materi',
+                    'title' => $item->title,
+                    'description' => 'pada kelas ' . ($item->topic->course->name ?? '-'),
+                    'user_name' => $item->author->full_name ?? 'Admin',
+                    'user_role' => 'Teacher',
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-file-plus',
+                    'color' => 'bg-blue-100 text-blue-600',
+                    'link' => route('admin.materials.index', ['filter_class' => $item->topic->course->id ?? null]),
                 ];
             });
 
-        // Kita ambil 5 Projek terbaru
-        $latestProjects = StudentProject::with(['student', 'course'])
+        // Ambil 5 Projek Terbaru
+        $projects = StudentProject::with(['student', 'course'])
             ->latest()
             ->take(5)
             ->get()
             ->map(function ($item) {
                 return [
+                    'id' => $item->id,
                     'type' => 'project',
-                    'actor' => $item->student->full_name ?? 'Mahasiswa',
-                    'action' => 'Mengirim Projek: ' . Str::limit($item->title, 20),
-                    'class' => $item->course->name ?? '-',
-                    'time' => $item->created_at,
-                    'icon' => 'bx-folder-plus',
-                    'color' => 'text-purple-500',
+                    'action' => 'Mengumpulkan Tugas',
+                    'title' => $item->title,
+                    'description' => 'di kelas ' . ($item->course->name ?? '-'),
+                    'user_name' => $item->student->full_name ?? 'Mahasiswa',
+                    'user_role' => 'Student',
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-folder',
+                    'color' => 'bg-purple-100 text-purple-600',
+                    'link' => route('admin.projects.index', ['filter_class' => $item->class_id]),
                 ];
             });
 
-        // Gabungkan, urutkan berdasarkan waktu terbaru, dan ambil 5 teratas
-        $recentActivities = $latestMaterials->merge($latestProjects)
-            ->sortByDesc('time')
-            ->take(6);
+        // Ambil 5 User Baru (Tambahan Baru untuk Dashboard)
+        $newUsers = User::where('role', 'student')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'type' => 'user',
+                    'action' => 'Bergabung',
+                    'title' => 'Mahasiswa Baru',
+                    'description' => 'Telah mendaftar ke dalam sistem.',
+                    'user_name' => $item->full_name,
+                    'user_role' => 'Student',
+                    'created_at' => $item->created_at,
+                    'icon' => 'bx-user-plus',
+                    'color' => 'bg-green-100 text-green-600',
+                    'link' => route('admin.users', ['search' => $item->username]),
+                ];
+            });
+
+        // Gabungkan, Urutkan, dan Ambil 8 Teratas
+        $recentActivities = $materials->merge($projects)->merge($newUsers)
+            ->sortByDesc('created_at')
+            ->take(8);
 
         return view('admin.dashboard', compact('stats', 'recentActivities'));
     }
