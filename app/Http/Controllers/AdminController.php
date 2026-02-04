@@ -534,93 +534,6 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Materi dihapus.');
     }
 
-    public function users(Request $request)
-    {
-        // Ambil daftar kelas untuk filter
-        $courses = Course::where('is_active', true)->get();
-
-        // Query Dasar: Ambil hanya yang role-nya 'student'
-        $query = User::where('role', 'student')->orderBy('created_at', 'desc');
-
-        // Filter berdasarkan Kelas (Jika dipilih)
-        if ($request->has('filter_class') && $request->filter_class != '') {
-            // Cari user yang punya relasi ke kelas ID tersebut
-            $query->whereHas('classes', function($q) use ($request) {
-                $q->where('classes.id', $request->filter_class);
-            });
-        }
-
-        // Filter Pencarian Nama/NIM (Opsional, tambahan fitur search sederhana)
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('full_name', 'like', "%{$search}%")
-                ->orWhere('username', 'like', "%{$search}%");
-            });
-        }
-
-        $students = $query->get();
-
-        return view('admin.users', compact('students', 'courses'));
-    }
-
-    public function storeUser(Request $request)
-    {
-        $request->validate([
-            'full_name' => 'required|string|max:100',
-            'username'  => 'required|string|max:50|unique:users,username', // NIM harus unik
-            'email'     => 'required|email|max:100|unique:users,email',
-            'password'  => 'required|string|min:6',
-        ]);
-
-        User::create([
-            'full_name' => $request->full_name,
-            'username'  => $request->username,
-            'email'     => $request->email,
-            'password'  => Hash::make($request->password),
-            'role'      => 'student', // Paksa role jadi student
-            'avatar'    => 'default.jpg',
-        ]);
-
-        return redirect()->route('admin.users')->with('success', 'Mahasiswa berhasil ditambahkan!');
-    }
-
-    public function updateUser(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
-        $request->validate([
-            'full_name' => 'required|string|max:100',
-            // Ignore unique validation untuk ID user ini sendiri
-            'username'  => 'required|string|max:50|unique:users,username,'.$user->id,
-            'email'     => 'required|email|max:100|unique:users,email,'.$user->id,
-            'password'  => 'nullable|string|min:6', // Password boleh kosong jika tidak ingin diganti
-        ]);
-
-        $data = [
-            'full_name' => $request->full_name,
-            'username'  => $request->username,
-            'email'     => $request->email,
-        ];
-
-        // Jika password diisi, update password baru
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $user->update($data);
-
-        return redirect()->route('admin.users')->with('success', 'Data mahasiswa berhasil diperbarui!');
-    }
-
-    public function destroyUser($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
-
-        return redirect()->back()->with('success', 'Mahasiswa berhasil dihapus.');
-    }
-
     public function projects(Request $request)
     {
         $courses = Course::orderBy('name', 'asc')->get();
@@ -668,6 +581,97 @@ class AdminController extends Controller
         $status = $project->is_featured ? 'ditandai sebagai Unggulan (Featured)' : 'dihapus dari daftar Unggulan';
         
         return redirect()->back()->with('success', "Projek berhasil $status.");
+    }
+
+    public function users(Request $request)
+    {
+        // Ambil daftar kelas aktif untuk filter dropdown
+        $courses = Course::orderBy('name', 'asc')->get();
+
+        // Query Dasar: Ambil user dengan role 'student'
+        $query = User::where('role', 'student');
+
+        // 1. Filter berdasarkan Kelas
+        if ($request->filled('filter_class')) {
+            // Asumsi relasi 'classes' (belongsToMany) ada di model User
+            $query->whereHas('classes', function($q) use ($request) {
+                $q->where('classes.id', $request->filter_class);
+            });
+        }
+
+        // 2. Filter Pencarian (Nama / NIM / Email)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Urutkan dan Pagination
+        $students = $query->orderBy('full_name', 'asc')->paginate(15)->withQueryString();
+
+        return view('admin.users', compact('students', 'courses'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:100',
+            'username'  => 'required|string|max:50|unique:users,username',
+            'email'     => 'required|email|max:100|unique:users,email',
+            'password'  => 'required|string|min:6',
+        ]);
+
+        User::create([
+            'full_name' => $request->full_name,
+            'username'  => $request->username,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role'      => 'student',
+            'avatar'    => 'default.jpg',
+        ]);
+
+        return redirect()->back()->with('success', 'Mahasiswa berhasil ditambahkan.');
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'full_name' => 'required|string|max:100',
+            'username'  => 'required|string|max:50|unique:users,username,'.$user->id,
+            'email'     => 'required|email|max:100|unique:users,email,'.$user->id,
+            'password'  => 'nullable|string|min:6',
+        ]);
+
+        $data = [
+            'full_name' => $request->full_name,
+            'username'  => $request->username,
+            'email'     => $request->email,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->back()->with('success', 'Data mahasiswa diperbarui.');
+    }
+
+    public function destroyUser($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Hapus file terkait jika perlu (opsional)
+        // Storage::delete($user->avatar); 
+
+        $user->delete();
+
+        return redirect()->back()->with('success', 'Akun mahasiswa dihapus.');
     }
 
     public function activity()
