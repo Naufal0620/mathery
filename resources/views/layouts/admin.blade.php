@@ -171,30 +171,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
     <script>
-        // Konfigurasi Toastr
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-bottom-right",
-            "timeOut": "3000",
-        };
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+            didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+        });
 
-        // Tangkap session 'success'
-        @if(session('success'))
-            toastr.success("{{ session('success') }}");
-        @endif
-
-        // Tangkap session 'error'
-        @if(session('error'))
-            toastr.error("{{ session('error') }}");
-        @endif
-        
-        // Tangkap error validasi form
-        @if($errors->any())
-            @foreach($errors->all() as $error)
-                toastr.error("{{ $error }}");
-            @endforeach
-        @endif
+        @if(session('success')) Toast.fire({ icon: 'success', title: "{{ session('success') }}" }); @endif
+        @if(session('error')) Toast.fire({ icon: 'error', title: "{{ session('error') }}" }); @endif
+        @if($errors->any()) Toast.fire({ icon: 'warning', title: "{{ $errors->first() }}" }); @endif
     </script>
 
     @stack('scripts')

@@ -6,65 +6,46 @@
 @section('content')
 <div class="fade-in max-w-7xl mx-auto pb-20 md:pb-0">
     
-    {{-- 1. Welcome Banner (Mobile Optimized) --}}
-    <div class="relative bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 md:p-8 mb-8 text-white overflow-hidden shadow-lg shadow-indigo-200/50">
-        {{-- Decorative Circles --}}
-        <div class="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full -mr-10 -mt-10 blur-3xl pointer-events-none"></div>
-        <div class="absolute bottom-0 left-0 w-24 md:w-40 h-24 md:h-40 bg-white/10 rounded-full -ml-8 -mb-8 blur-2xl pointer-events-none"></div>
+    {{-- 1. Welcome Banner --}}
+    <div class="relative bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 md:p-10 mb-10 text-white overflow-hidden shadow-2xl shadow-indigo-200/50">
+        
+        {{-- Decorative Background Elements --}}
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl pointer-events-none"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-30 pointer-events-none"></div>
 
-        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div class="w-full">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-white/10">
-                        Semester Genap
-                    </span>
-                </div>
-                <h2 class="text-2xl md:text-4xl font-bold leading-tight mb-2">Halo, {{ Str::limit(Auth::user()->full_name, 15) }}! 👋</h2>
-                <p class="text-indigo-100 text-sm md:text-lg mb-6 max-w-lg">
-                    Siap melanjutkan progres belajarmu? Jangan lupa cek jadwal hari ini.
-                </p>
+        <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+            <div class="w-full lg:w-2/3">
+                {{-- REVISI: Menghapus Badge 'Semester Genap' --}}
                 
-                {{-- Stats Cards (Mobile: Stack/Grid, Desktop: Flex) --}}
-                <div class="grid grid-cols-2 sm:flex gap-3">
-                    <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 hover:bg-white/20 transition-colors">
-                        <i class='bx bx-book-open text-2xl'></i>
-                        <div>
-                            <span class="block text-xl font-bold leading-none">{{ $myClasses->count() }}</span>
-                            <span class="text-[10px] sm:text-xs text-indigo-100 uppercase font-medium">Kelas Aktif</span>
-                        </div>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 hover:bg-white/20 transition-colors">
-                        <i class='bx bx-calendar-event text-2xl'></i>
-                        <div>
-                            <span class="block text-xl font-bold leading-none">{{ $upcomingSchedules->count() }}</span>
-                            <span class="text-[10px] sm:text-xs text-indigo-100 uppercase font-medium">Agenda</span>
-                        </div>
-                    </div>
-                </div>
+                <h2 class="text-3xl md:text-5xl font-extrabold leading-tight mb-3 tracking-tight">
+                    Halo, {{ Str::before(Auth::user()->full_name, ' ') }}! 👋
+                </h2>
+                <p class="text-indigo-100 text-base md:text-lg mb-4 max-w-lg leading-relaxed opacity-90">
+                    Siap melanjutkan progres belajarmu? Cek jadwal dan materi terbaru hari ini.
+                </p>
             </div>
             
-            {{-- Illustration (Hidden on Mobile for space) --}}
-            <div class="hidden md:block relative">
-                <i class='bx bx-rocket text-[10rem] text-white/10 absolute -top-10 -right-10 animate-pulse-slow'></i>
+            {{-- Illustration --}}
+            <div class="hidden lg:block relative w-1/3 h-full min-h-[200px]">
+                <i class='bx bx-rocket text-[12rem] text-white/5 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-float'></i>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {{-- KOLOM KIRI: DAFTAR KELAS (Prioritas Mobile) --}}
-        <div class="xl:col-span-2 space-y-8">
+        {{-- KOLOM KIRI: DAFTAR KELAS --}}
+        <div class="lg:col-span-2 space-y-8">
             
-            {{-- Header Section Kelas --}}
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <i class='bx bxs-school text-indigo-600'></i> Kelas Saya
+                        <i class='bx bx-whiteboard-alt text-indigo-600'></i> Kelas Saya
                     </h3>
                     <p class="text-sm text-gray-500">Mata kuliah yang sedang Anda tempuh.</p>
                 </div>
                 
-                {{-- Tombol Gabung (Full Width di Mobile) --}}
                 <button onclick="openModal('modalJoinClass')" class="w-full sm:w-auto bg-white border border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 group">
                     <i class='bx bx-plus-circle text-xl group-hover:scale-110 transition-transform'></i> 
                     Gabung Kelas Baru
@@ -100,10 +81,9 @@
 
             {{-- SECTION 2: KELAS AKTIF --}}
             @if($myClasses->isEmpty() && $pendingClasses->isEmpty())
-                {{-- Empty State --}}
                 <div class="bg-white rounded-3xl p-10 text-center border-2 border-dashed border-gray-200">
                     <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-300">
-                        <i class='bx bx-chalkboard text-4xl'></i>
+                        <i class='bx bx-whiteboard text-4xl'></i>
                     </div>
                     <h4 class="text-gray-800 font-bold text-lg mb-2">Belum ada kelas aktif</h4>
                     <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Anda belum mengambil mata kuliah apapun. Minta kode kelas ke dosen untuk memulai.</p>
@@ -115,11 +95,8 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     @foreach($myClasses as $class)
                     <a href="{{ route('student.class.show', $class->id) }}" class="group relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden">
-                        
-                        {{-- Hover Gradient Background --}}
                         <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         
-                        {{-- Content --}}
                         <div class="relative z-10">
                             <div class="flex justify-between items-start mb-4">
                                 <span class="bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg group-hover:bg-white/20 group-hover:text-white transition-colors">
@@ -139,9 +116,8 @@
                                 <span>{{ $class->teacher->full_name ?? 'Dosen' }}</span>
                             </div>
 
-                            {{-- Progress Bar (Dummy/Placeholder) --}}
                             <div class="w-full bg-gray-100 rounded-full h-1.5 group-hover:bg-black/20">
-                                <div class="bg-indigo-500 group-hover:bg-white h-1.5 rounded-full" style="width: 0%"></div> {{-- Logic progress bisa ditambahkan nanti --}}
+                                <div class="bg-indigo-500 group-hover:bg-white h-1.5 rounded-full" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between mt-2">
                                 <span class="text-[10px] font-bold text-gray-400 group-hover:text-indigo-200">STATUS: AKTIF</span>
@@ -153,11 +129,11 @@
             @endif
         </div>
 
-        {{-- KOLOM KANAN: SIDEBAR WIDGETS (Stacked on Mobile) --}}
+        {{-- KOLOM KANAN: SIDEBAR WIDGETS --}}
         <div class="space-y-6">
             
             {{-- Widget: Upcoming Schedule --}}
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col h-full md:h-auto">
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col">
                 <div class="p-5 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800 flex items-center gap-2">
                         <i class='bx bx-calendar text-orange-500'></i> Jadwal
@@ -174,16 +150,23 @@
                             <p class="text-xs text-gray-500">Tidak ada jadwal kuliah dalam waktu dekat.</p>
                         </div>
                     @else
-                        <div class="relative space-y-6 pl-2">
-                            {{-- Timeline Line --}}
-                            <div class="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-100"></div>
-
+                        <div class="flex flex-col">
                             @foreach($upcomingSchedules as $topic)
-                            <div class="relative pl-8 group">
-                                {{-- Timeline Dot --}}
-                                <div class="absolute left-[9px] top-1.5 w-3.5 h-3.5 rounded-full bg-white border-[3px] border-indigo-500 group-hover:border-orange-500 transition-colors z-10"></div>
+                            <div class="flex gap-4 group min-h-[4rem]"> 
                                 
-                                <div>
+                                {{-- Timeline Graphic --}}
+                                <div class="relative flex flex-col items-center w-4">
+                                    @if($upcomingSchedules->count() > 1)
+                                        <div class="absolute w-0.5 bg-gray-100 left-1/2 -translate-x-1/2
+                                            {{ $loop->first ? 'top-2' : 'top-0' }}
+                                            {{ $loop->last ? 'h-4' : 'h-full' }}
+                                        "></div>
+                                    @endif
+                                    <div class="w-3.5 h-3.5 rounded-full bg-white border-[3px] border-indigo-500 group-hover:border-orange-500 transition-colors z-10 mt-1 relative"></div>
+                                </div>
+                                
+                                {{-- Content --}}
+                                <div class="pb-6">
                                     <h5 class="text-sm font-bold text-gray-800 leading-tight group-hover:text-indigo-600 transition-colors cursor-pointer">
                                         {{ $topic->name }}
                                     </h5>
@@ -201,7 +184,7 @@
                 </div>
             </div>
 
-            {{-- Widget: Quick Motivation / Stats --}}
+            {{-- Widget: Quick Motivation --}}
             <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                 <i class='bx bxs-quote-right absolute top-4 right-4 text-4xl text-white/10'></i>
                 <p class="text-sm font-medium text-gray-300 italic mb-4">"Pendidikan adalah senjata paling ampuh untuk mengubah dunia."</p>
@@ -215,16 +198,13 @@
     </div>
 </div>
 
-{{-- MODAL GABUNG KELAS (NEW STRUCTURE - BACKDROP CLICK CLOSE) --}}
+{{-- MODAL GABUNG KELAS --}}
 <div id="modalJoinClass" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
-
     <div class="fixed inset-0 z-10 overflow-y-auto" onclick="closeModal('modalJoinClass')">
         <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center">
-            
             <div class="relative transform overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white text-left shadow-2xl transition-all w-full sm:max-w-lg p-0 fade-in-up" onclick="event.stopPropagation()">
                 
-                {{-- Header Modal --}}
                 <div class="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-20">
                     <h3 class="text-lg font-bold text-gray-800">Cari Kelas Baru</h3>
                     <button onclick="closeModal('modalJoinClass')" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition">
@@ -233,7 +213,6 @@
                 </div>
                 
                 <div class="p-6">
-                    {{-- Search Input Group --}}
                     <div class="relative mb-6">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class='bx bx-search text-gray-400 text-xl'></i>
@@ -247,10 +226,7 @@
                         </div>
                     </div>
 
-                    {{-- Dynamic Results Area --}}
                     <div id="searchResultsArea" class="min-h-[200px] max-h-[350px] overflow-y-auto custom-scrollbar">
-                        
-                        {{-- State: Start --}}
                         <div id="stateStart" class="flex flex-col items-center justify-center py-10 text-gray-400">
                             <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                                 <i class='bx bx-search-alt text-3xl'></i>
@@ -258,20 +234,15 @@
                             <p class="text-sm">Ketik minimal 3 karakter untuk mencari.</p>
                         </div>
 
-                        {{-- State: No Results --}}
                         <div id="stateEmpty" class="hidden flex flex-col items-center justify-center py-10 text-gray-400">
                             <i class='bx bx-ghost text-4xl mb-2 opacity-50'></i>
                             <p class="text-sm">Kelas tidak ditemukan.</p>
                         </div>
 
-                        {{-- State: List Results --}}
-                        <div id="resultsContainer" class="hidden space-y-3">
-                            {{-- Items will be injected here via JS --}}
-                        </div>
+                        <div id="resultsContainer" class="hidden space-y-3"></div>
                     </div>
                 </div>
                 
-                {{-- Footer Hint --}}
                 <div class="bg-gray-50 px-6 py-3 text-center border-t border-gray-100">
                     <p class="text-xs text-gray-400">Pastikan Anda memilih kelas yang benar sesuai jadwal.</p>
                 </div>
@@ -281,21 +252,14 @@
 </div>
 
 @push('scripts')
-{{-- Load SweetAlert2 from CDN --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
-    // --- MODAL LOGIC (New Standard) ---
     function openModal(id) { 
         document.getElementById(id).classList.remove('hidden');
-        // Auto focus input on desktop logic, slightly delayed for animation
-        if(id === 'modalJoinClass') {
-            setTimeout(() => document.getElementById('classSearchInput').focus(), 100);
-        }
+        if(id === 'modalJoinClass') { setTimeout(() => document.getElementById('classSearchInput').focus(), 100); }
     }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    // --- SEARCH LOGIC (AJAX) ---
     const searchInput = document.getElementById('classSearchInput');
     const searchLoader = document.getElementById('searchLoader');
     const stateStart = document.getElementById('stateStart');
@@ -306,62 +270,34 @@
     searchInput.addEventListener('input', function() {
         clearTimeout(typingTimer);
         const query = this.value.trim();
-
-        if (query.length < 3) {
-            resetSearchState();
-            return;
-        }
-
-        // Show loading
+        if (query.length < 3) { resetSearchState(); return; }
         searchLoader.classList.remove('hidden');
-        
-        typingTimer = setTimeout(() => {
-            fetchClasses(query);
-        }, 600); // Debounce 600ms
+        typingTimer = setTimeout(() => { fetchClasses(query); }, 600);
     });
 
     function fetchClasses(query) {
-        // Gunakan URL yang sudah ada di controller
         fetch(`{{ route('student.searchClasses') }}?search=${query}`)
             .then(response => response.json())
-            .then(data => {
-                renderClasses(data);
-            })
-            .catch(err => {
-                console.error(err);
-                // Gunakan SweetAlert2 untuk error koneksi
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Gagal mencari kelas. Periksa koneksi internet Anda.',
-                    confirmButtonColor: '#4f46e5'
-                });
-            })
-            .finally(() => {
-                searchLoader.classList.add('hidden');
-            });
+            .then(data => { renderClasses(data); })
+            .catch(err => { Swal.fire({icon: 'error', title: 'Oops...', text: 'Gagal mencari kelas.', confirmButtonColor: '#4f46e5'}); })
+            .finally(() => { searchLoader.classList.add('hidden'); });
     }
 
     function renderClasses(classes) {
         stateStart.classList.add('hidden');
-        resultsContainer.innerHTML = ''; // Clear previous
-
+        resultsContainer.innerHTML = '';
         if (classes.length === 0) {
             stateEmpty.classList.remove('hidden');
             resultsContainer.classList.add('hidden');
         } else {
             stateEmpty.classList.add('hidden');
             resultsContainer.classList.remove('hidden');
-
             classes.forEach(cls => {
-                // Buat Elemen HTML untuk setiap hasil
                 const item = document.createElement('div');
-                item.className = 'flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all group';
+                item.className = 'p-4 mx-3 bg-gray-100 border border-gray-100 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all group';
                 item.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold shrink-0">
-                            ${cls.name.charAt(0)}
-                        </div>
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold shrink-0">${cls.name.charAt(0)}</div>
                         <div>
                             <h5 class="font-bold text-gray-800 text-sm group-hover:text-indigo-700 transition-colors">${cls.name}</h5>
                             <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
@@ -370,9 +306,7 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="confirmJoin('${cls.id}', '${cls.name}')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 hover:shadow-none whitespace-nowrap">
-                        Gabung
-                    </button>
+                    <button onclick="confirmJoin('${cls.id}', '${cls.name}')" class="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 hover:shadow-none whitespace-nowrap">Gabung</button>
                 `;
                 resultsContainer.appendChild(item);
             });
@@ -387,104 +321,41 @@
         searchLoader.classList.add('hidden');
     }
 
-    // --- JOIN CLASS ACTION (SweetAlert2) ---
     function confirmJoin(classId, className) {
-        // Tutup modal pencarian dulu (opsional, tapi lebih rapi)
-        // closeModal('modalJoinClass'); 
-
         Swal.fire({
             title: 'Gabung Kelas?',
             text: `Anda akan mengirim permintaan untuk bergabung ke kelas "${className}".`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#4f46e5', // Indigo-600
-            cancelButtonColor: '#d1d5db', // Gray-300
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#d1d5db',
             confirmButtonText: 'Ya, Gabung!',
             cancelButtonText: 'Batal',
-            cancelButtonColor: '#6b7280',
             reverseButtons: true,
-            customClass: {
-                popup: 'rounded-2xl font-poppins',
-                confirmButton: 'rounded-xl px-4 py-2',
-                cancelButton: 'rounded-xl px-4 py-2 text-gray-800'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                submitJoinRequest(classId);
-            }
-        });
+            customClass: { popup: 'rounded-2xl font-poppins', confirmButton: 'rounded-xl px-4 py-2', cancelButton: 'rounded-xl px-4 py-2 text-gray-800' }
+        }).then((result) => { if (result.isConfirmed) { submitJoinRequest(classId); } });
     }
 
     function submitJoinRequest(classId) {
-        // Buat form hidden dinamis untuk submit POST
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = "{{ route('student.joinClass') }}";
-        
         const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = "{{ csrf_token() }}";
+        csrfToken.type = 'hidden'; csrfToken.name = '_token'; csrfToken.value = "{{ csrf_token() }}";
         form.appendChild(csrfToken);
-
         const inputId = document.createElement('input');
-        inputId.type = 'hidden';
-        inputId.name = 'class_id';
-        inputId.value = classId;
+        inputId.type = 'hidden'; inputId.name = 'class_id'; inputId.value = classId;
         form.appendChild(inputId);
-
         document.body.appendChild(form);
         form.submit();
     }
-
-    // --- SESSION ALERTS (Menggantikan Toastr bawaan layout jika ada conflict, atau mempercantik) ---
-    // Karena layout student sudah pakai Toastr, kita bisa override atau biarkan. 
-    // Sesuai request "Ganti alert js biasa ke SweetAlert2", kode di bawah menangani flash message via SweetAlert2 (Toast Style)
-    
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
-        }
-    });
-
-    @if(session('success'))
-        Toast.fire({
-            icon: 'success',
-            title: "{{ session('success') }}"
-        });
-    @endif
-
-    @if(session('error'))
-        Toast.fire({
-            icon: 'error',
-            title: "{{ session('error') }}"
-        });
-    @endif
-
-    @if($errors->any())
-        Toast.fire({
-            icon: 'warning',
-            title: "{{ $errors->first() }}"
-        });
-    @endif
-
 </script>
 
 <style>
-    /* Animation helper for modal bottom sheet on mobile */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0%, 100% { transform: translate(-50%, -50%) translateY(0px); } 50% { transform: translate(-50%, -50%) translateY(-15px); } }
     .fade-in-up { animation: fadeInUp 0.3s ease-out; }
-    
-    /* Font Adjustment for SweetAlert */
+    .animate-float { animation: float 6s ease-in-out infinite; }
     .font-poppins { font-family: 'Poppins', sans-serif; }
 </style>
 @endpush

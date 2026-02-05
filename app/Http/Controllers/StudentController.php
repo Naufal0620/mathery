@@ -35,6 +35,7 @@ class StudentController extends Controller
         $upcomingSchedules = Topic::whereIn('class_id', $acceptedClassIds)
             ->whereDate('meeting_date', '>=', now())
             ->orderBy('meeting_date', 'asc')
+            ->orderBy('name', 'asc')
             ->with('course')
             ->take(5)
             ->get();
