@@ -28,7 +28,7 @@
             
             {{-- Illustration --}}
             <div class="hidden lg:block relative w-1/3 h-full min-h-[200px]">
-                <i class='bx bx-rocket text-[12rem] text-white/5 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-float'></i>
+                <i class='bx bx-rocket text-[12rem] text-white/5 absolute top-1/2 left-1/2 transform translate-x-1/2 animate-float'></i>
             </div>
         </div>
     </div>

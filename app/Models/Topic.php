@@ -31,4 +31,9 @@ class Topic extends Model
     {
         return $this->hasMany(Group::class, 'topic_id');
     }
+
+    public function comments()
+    {
+        return $this->hasMany(TopicComment::class)->whereNull('parent_id')->latest();
+    }
 }

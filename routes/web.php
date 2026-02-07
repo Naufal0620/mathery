@@ -102,10 +102,8 @@ Route::middleware('auth')->group(function () {
         Route::controller(StudentController::class)->group(function () {
             Route::get('/dashboard', 'dashboard')->name('dashboard');
 
-            // --- TAMBAHAN BARU ---
             Route::get('/my-classes', 'myClasses')->name('myClasses'); // Halaman "Kelas Saya"
             Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman "Detail Kelas"
-            // ---------------------
 
             // Route Join (Update)
             Route::post('/join-class', 'joinClass')->name('joinClass');
@@ -114,19 +112,19 @@ Route::middleware('auth')->group(function () {
             Route::get('/ajax/search-classes', 'searchClasses')->name('searchClasses');
 
             Route::get('/class/{id}', 'showClass')->name('class.show'); // Halaman detail kelas
-            Route::post('/group/{groupId}/join', 'joinGroup')->name('group.join');
+            Route::post('/topic/{id}/comment', [StudentController::class, 'storeComment'])->name('topic.comment');
+            Route::post('/comment/{id}/like', [StudentController::class, 'toggleLikeComment'])->name('comment.like');
+            
+            Route::post('/group/join', [StudentController::class, 'joinGroup'])->name('group.join');
             Route::post('/class/{classId}/group/leave', 'requestLeaveGroup')->name('group.leave');
 
             // Route materi
             Route::get('/materials', [StudentController::class, 'materialsIndex'])->name('materials.index');
             Route::post('/materials', [StudentController::class, 'storeMaterial'])->name('materials.store');
 
-            // Route::get('/projects-gallery', [StudentController::class, 'allProjects'])->name('projects.index');
-            // Route::get('/class/{classId}/project/create', 'createProject')->name('project.create');
-            // Route::post('/class/{classId}/project/store', 'storeProject')->name('project.store');
-
             Route::get('/projects', [StudentController::class, 'projectsIndex'])->name('projects.index');
             Route::post('/projects', [StudentController::class, 'storeProject'])->name('projects.store');
+            // Route::get('/class/{course_id}/project/create', [StudentController::class, 'createProject'])->name('project.create'); // Jika belum ada
         });
     });
 });

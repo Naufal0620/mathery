@@ -103,75 +103,99 @@ class StudentController extends Controller
     public function showClass($id)
     {
         $user = Auth::user();
+        $course = Course::with('teacher')->findOrFail($id);
 
-        // 1. Cari kelasnya & pastikan user terdaftar (accepted)
-        // Menggunakan 'whereHas' atau filter di collection untuk keamanan akses
-        // $course = $user->classes()
-        //     ->where('classes.id', $id)
-        //     ->wherePivot('status', 'accepted')
-        //     ->with([
-        //         'teacher',
-        //         'topics' => function($q) {
-        //             $q->orderBy('meeting_date', 'asc');
-        //         },
-        //         'groups.students' // Load groups dan anggotanya
-        //     ])
-        //     ->first();
-
-        $course = $user->classes()
-            ->where('classes.id', $id)
-            ->wherePivot('status', 'accepted')
-            ->with([
-                'teacher', 
-                'topics.materials', // <--- TAMBAHKAN '.materials' DI SINI
-                'groups.students'
-            ])
-            ->first();
-
-        if (!$course) {
-            return redirect()->route('student.dashboard')->with('error', 'Kelas tidak ditemukan atau Anda belum terdaftar.');
+        if (!$course->students()->where('user_id', $user->id)->exists()) {
+            return redirect()->route('student.dashboard')->with('error', 'Anda tidak terdaftar.');
         }
 
-        // 2. Ambil data membership user di kelas ini (untuk cek group_id user)
-        $membership = $course->pivot; 
+        // Ambil Topik + Komentar (Eager Load user & likes untuk performa)
+        $topics = Topic::where('class_id', $id)
+            ->with(['comments.user', 'comments.replies.user', 'comments.likes']) 
+            ->orderBy('meeting_date', 'asc')
+            ->get();
 
-        return view('student.class_detail', compact('course', 'membership'));
+        return view('student.class_detail', compact('course', 'topics'));
     }
 
-    public function joinGroup(Request $request, $groupId)
+    // --- FITUR DISKUSI ---
+
+    public function storeComment(Request $request, $topicId)
     {
-        $user = Auth::user();
-        $group = Group::findOrFail($groupId);
-
-        // FIX: Tambahkan ->withPivot('status') di sini juga untuk keamanan ganda
-        $membership = $user->classes()
-            ->where('classes.id', $group->class_id)
-            ->withPivot('status') 
-            ->first();
-
-        // Debugging (jika masih error, cek nilai ini)
-        // dd($membership->pivot->status); 
-
-        if (!$membership || $membership->pivot->status !== 'accepted') {
-            return redirect()->back()->with('error', 'Akses ditolak. Anda belum resmi diterima di kelas ini.');
-        }
-
-        // Validasi: Apakah user sudah punya kelompok di kelas ini?
-        if ($membership->pivot->group_id) {
-            return redirect()->back()->with('error', 'Anda sudah memiliki kelompok di kelas ini.');
-        }
-
-        // Validasi: Apakah kelompok penuh?
-        if ($group->isFull()) {
-            return redirect()->back()->with('error', 'Kelompok penuh.');
-        }
-
-        // Update Pivot: Masukkan user ke kelompok
-        $user->classes()->updateExistingPivot($group->class_id, [
-            'group_id' => $group->id
+        $request->validate([
+            'body' => 'required_without:image|nullable|string',
+            'image' => 'nullable|image|max:2048', // Max 2MB
+            'parent_id' => 'nullable|exists:topic_comments,id'
         ]);
 
-        return redirect()->back()->with('success', 'Berhasil bergabung dengan ' . $group->name);
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('comments', 'public');
+        }
+
+        TopicComment::create([
+            'topic_id' => $topicId,
+            'user_id' => Auth::id(),
+            'parent_id' => $request->parent_id,
+            'body' => $request->body,
+            'image_path' => $imagePath
+        ]);
+
+        return redirect()->back()->with('success', 'Komentar terkirim.');
+    }
+
+    public function toggleLikeComment($commentId)
+    {
+        $user = Auth::user();
+        $like = TopicCommentLike::where('topic_comment_id', $commentId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($like) {
+            $like->delete();
+            $liked = false;
+        } else {
+            TopicCommentLike::create([
+                'topic_comment_id' => $commentId,
+                'user_id' => $user->id
+            ]);
+            $liked = true;
+        }
+
+        // Return JSON untuk AJAX
+        $count = TopicCommentLike::where('topic_comment_id', $commentId)->count();
+        return response()->json(['liked' => $liked, 'count' => $count]);
+    }
+
+    // METHOD BARU: Gabung Kelompok
+    public function joinGroup(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:groups,id',
+        ]);
+
+        $user = Auth::user();
+        $group = Group::findOrFail($request->group_id);
+
+        // 1. Validasi: Apakah User sudah punya kelompok di kelas ini?
+        $existingGroup = Group::where('class_id', $group->class_id)
+            ->whereHas('students', function($q) use ($user) {
+                $q->where('users.id', $user->id);
+            })->exists();
+
+        if ($existingGroup) {
+            return redirect()->back()->with('error', 'Anda sudah terdaftar di kelompok lain dalam kelas ini.');
+        }
+
+        // 2. Validasi: Apakah kelompok penuh? (Opsional, misalnya max 5)
+        // if ($group->students()->count() >= 5) {
+        //     return redirect()->back()->with('error', 'Kelompok ini sudah penuh.');
+        // }
+
+        // 3. Masukkan User ke Kelompok
+        $group->students()->attach($user->id);
+
+        return redirect()->back()->with('success', 'Berhasil bergabung dengan kelompok ' . $group->name);
     }
 
     public function requestLeaveGroup($classId)
